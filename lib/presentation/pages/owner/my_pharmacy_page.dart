@@ -1,10 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:pharma_connect_flutter/domain/entities/pharmacy/pharmacy.dart';
+import 'package:pharma_connect_flutter/domain/repositories/pharmacy_repository.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/remote/pharmacy_api.dart';
+import 'package:pharma_connect_flutter/infrastructure/repositories/pharmacy_repository_impl.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-class MyPharmacyPage extends StatelessWidget {
+class MyPharmacyPage extends StatefulWidget {
   const MyPharmacyPage({Key? key}) : super(key: key);
 
   @override
+  State<MyPharmacyPage> createState() => _MyPharmacyPageState();
+}
+
+class _MyPharmacyPageState extends State<MyPharmacyPage> {
+  late final PharmacyRepository _pharmacyRepository;
+  late final SessionManager _sessionManager;
+  Pharmacy? _pharmacy;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeDependencies();
+  }
+
+  Future<void> _initializeDependencies() async {
+    final prefs = await SharedPreferences.getInstance();
+    _sessionManager = SessionManager(prefs);
+    _pharmacyRepository = PharmacyRepositoryImpl(
+      pharmacyApi: PharmacyApi(client: http.Client()),
+    );
+    _loadPharmacy();
+  }
+
+  Future<void> _loadPharmacy() async {
+    try {
+      final pharmacyId = _sessionManager.getPharmacyId();
+      if (pharmacyId == null) {
+        setState(() {
+          _error = 'No pharmacy ID found. Please log in again.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final pharmacy = await _pharmacyRepository.getPharmacy(pharmacyId);
+      setState(() {
+        _pharmacy = pharmacy;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Error: $_error',
+              style: const TextStyle(color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadPharmacy,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_pharmacy == null) {
+      return const Center(
+        child: Text('No pharmacy data available'),
+      );
+    }
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -29,7 +115,6 @@ class MyPharmacyPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                       
                         ),
                       ),
                       IconButton(
@@ -41,11 +126,10 @@ class MyPharmacyPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'sjsjw',
-                    style: TextStyle(
+                  Text(
+                    _pharmacy!.name,
+                    style: const TextStyle(
                       fontSize: 20,
-                     
                     ),
                   ),
                 ],
@@ -60,10 +144,12 @@ class MyPharmacyPage extends StatelessWidget {
                     context,
                     'Pharmacy Information',
                     [
-                      _buildDetailRow('Owner Name', 'gwhw'),
-                      _buildDetailRow('License Number', 'agahsj'),
-                      _buildDetailRow('Email', 'tsige@gmail.com'),
-                      _buildDetailRow('Contact Number', '1213'),
+                      _buildDetailRow('Owner Name', _pharmacy!.ownerName),
+                      _buildDetailRow(
+                          'License Number', _pharmacy!.licenseNumber),
+                      _buildDetailRow('Email', _pharmacy!.email),
+                      _buildDetailRow(
+                          'Contact Number', _pharmacy!.contactNumber),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -71,9 +157,9 @@ class MyPharmacyPage extends StatelessWidget {
                     context,
                     'Location Details',
                     [
-                      _buildDetailRow('Address', 'sgs'),
-                      _buildDetailRow('City', 'hshs'),
-                      _buildDetailRow('State', 'shehs'),
+                      _buildDetailRow('Address', _pharmacy!.address),
+                      _buildDetailRow('City', _pharmacy!.city),
+                      _buildDetailRow('State', _pharmacy!.state),
                     ],
                   ),
                   const SizedBox(height: 20),

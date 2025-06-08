@@ -26,6 +26,8 @@ mixin _$User {
   String get role => throw _privateConstructorUsedError;
   String? get phone => throw _privateConstructorUsedError;
   String? get address => throw _privateConstructorUsedError;
+  String? get pharmacyId => throw _privateConstructorUsedError;
+  String? get token => throw _privateConstructorUsedError;
 
   /// Serializes this User to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -47,7 +49,9 @@ abstract class $UserCopyWith<$Res> {
       String name,
       String role,
       String? phone,
-      String? address});
+      String? address,
+      String? pharmacyId,
+      String? token});
 }
 
 /// @nodoc
@@ -71,6 +75,8 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? role = null,
     Object? phone = freezed,
     Object? address = freezed,
+    Object? pharmacyId = freezed,
+    Object? token = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -97,6 +103,14 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
           ? _value.address
           : address // ignore: cast_nullable_to_non_nullable
               as String?,
+      pharmacyId: freezed == pharmacyId
+          ? _value.pharmacyId
+          : pharmacyId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      token: freezed == token
+          ? _value.token
+          : token // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -114,7 +128,9 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
       String name,
       String role,
       String? phone,
-      String? address});
+      String? address,
+      String? pharmacyId,
+      String? token});
 }
 
 /// @nodoc
@@ -135,6 +151,8 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? role = null,
     Object? phone = freezed,
     Object? address = freezed,
+    Object? pharmacyId = freezed,
+    Object? token = freezed,
   }) {
     return _then(_$UserImpl(
       id: null == id
@@ -161,6 +179,14 @@ class __$$UserImplCopyWithImpl<$Res>
           ? _value.address
           : address // ignore: cast_nullable_to_non_nullable
               as String?,
+      pharmacyId: freezed == pharmacyId
+          ? _value.pharmacyId
+          : pharmacyId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      token: freezed == token
+          ? _value.token
+          : token // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -174,7 +200,9 @@ class _$UserImpl implements _User {
       required this.name,
       required this.role,
       this.phone,
-      this.address});
+      this.address,
+      this.pharmacyId,
+      this.token});
 
   factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserImplFromJson(json);
@@ -191,10 +219,14 @@ class _$UserImpl implements _User {
   final String? phone;
   @override
   final String? address;
+  @override
+  final String? pharmacyId;
+  @override
+  final String? token;
 
   @override
   String toString() {
-    return 'User(id: $id, email: $email, name: $name, role: $role, phone: $phone, address: $address)';
+    return 'User(id: $id, email: $email, name: $name, role: $role, phone: $phone, address: $address, pharmacyId: $pharmacyId, token: $token)';
   }
 
   @override
@@ -207,13 +239,16 @@ class _$UserImpl implements _User {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.role, role) || other.role == role) &&
             (identical(other.phone, phone) || other.phone == phone) &&
-            (identical(other.address, address) || other.address == address));
+            (identical(other.address, address) || other.address == address) &&
+            (identical(other.pharmacyId, pharmacyId) ||
+                other.pharmacyId == pharmacyId) &&
+            (identical(other.token, token) || other.token == token));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, email, name, role, phone, address);
+  int get hashCode => Object.hash(
+      runtimeType, id, email, name, role, phone, address, pharmacyId, token);
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.
@@ -238,7 +273,9 @@ abstract class _User implements User {
       required final String name,
       required final String role,
       final String? phone,
-      final String? address}) = _$UserImpl;
+      final String? address,
+      final String? pharmacyId,
+      final String? token}) = _$UserImpl;
 
   factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
 
@@ -254,6 +291,10 @@ abstract class _User implements User {
   String? get phone;
   @override
   String? get address;
+  @override
+  String? get pharmacyId;
+  @override
+  String? get token;
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.

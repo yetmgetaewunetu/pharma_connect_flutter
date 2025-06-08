@@ -4,8 +4,8 @@ import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dar
 
 class AuthApi {
   final ApiClient _client;
-  static const String _baseUrl = 'https://pharma-connect-backend-8cay.onrender.com/api/v1';
-  
+  static const String _baseUrl =
+      'https://pharma-connect-backend-8cay.onrender.com/api/v1';
 
   AuthApi(this._client);
 
@@ -19,25 +19,38 @@ class AuthApi {
         },
       );
 
+      print('Login Response: ${response.data}'); // Debug log
+      print('Response Headers: ${response.headers}'); // Debug log
+
       if (response.data['success'] == true) {
         final userData = response.data['data'];
-        // Create a basic user from login response
-        final user = User(
-          id: userData['userId'],
-          email: email,
-          name: '', // We'll get the full name from profile
-          role: userData['role'],
-        );
-        final token = response.headers.value('authorization');
-        if (token != null) {
+        final authHeader = response.headers.value('authorization');
+        String? token;
+        if (authHeader != null && authHeader.startsWith('Bearer ')) {
+          token = authHeader.substring(7); // Remove 'Bearer ' prefix
           _client.setAuthToken(token);
         }
+
+        // Create a basic user from login response
+        final user = User(
+          id: userData['userId']?.toString() ?? '',
+          email: email,
+          name: userData['name']?.toString() ?? '',
+          role: userData['role']?.toString() ?? 'user',
+          pharmacyId: userData['pharmacyId']?.toString(),
+          token: token,
+        );
         return user;
       } else {
         throw Exception(response.data['message'] ?? 'Login failed');
       }
     } on DioException catch (e) {
+      print('DioException: ${e.message}'); // Debug log
+      print('Response: ${e.response?.data}'); // Debug log
       _handleError(e);
+      rethrow;
+    } catch (e) {
+      print('Unexpected error: $e'); // Debug log
       rethrow;
     }
   }
@@ -55,16 +68,21 @@ class AuthApi {
 
       if (response.data['success'] == true) {
         final userData = response.data['data'];
+        final authHeader = response.headers.value('authorization');
+        String? token;
+        if (authHeader != null && authHeader.startsWith('Bearer ')) {
+          token = authHeader.substring(7); // Remove 'Bearer ' prefix
+          _client.setAuthToken(token);
+        }
+
         final user = User(
           id: userData['userId'],
           email: email,
           name: name,
           role: userData['role'] ?? 'user',
+          pharmacyId: userData['pharmacyId'],
+          token: token,
         );
-        final token = response.headers.value('authorization');
-        if (token != null) {
-          _client.setAuthToken(token);
-        }
         return user;
       } else {
         throw Exception(response.data['message'] ?? 'Registration failed');
@@ -100,7 +118,8 @@ class AuthApi {
           address: userData['address'],
         );
       } else {
-        throw Exception(response.data['message'] ?? 'Failed to get user profile');
+        throw Exception(
+            response.data['message'] ?? 'Failed to get user profile');
       }
     } on DioException catch (e) {
       _handleError(e);
@@ -128,7 +147,8 @@ class AuthApi {
     }
   }
 
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(
+      String currentPassword, String newPassword) async {
     try {
       final response = await _client.dio.put(
         '$_baseUrl/users/password',
@@ -139,7 +159,8 @@ class AuthApi {
       );
 
       if (response.data['success'] != true) {
-        throw Exception(response.data['message'] ?? 'Failed to change password');
+        throw Exception(
+            response.data['message'] ?? 'Failed to change password');
       }
     } on DioException catch (e) {
       _handleError(e);
@@ -153,4 +174,4 @@ class AuthApi {
     }
     throw Exception(e.response?.data['message'] ?? e.message);
   }
-} 
+}

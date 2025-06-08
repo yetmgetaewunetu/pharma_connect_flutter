@@ -12,7 +12,9 @@ class User with _$User {
     required String role,
     String? phone,
     String? address,
+    String? pharmacyId,
+    String? token,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
-} 
+}

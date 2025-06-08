@@ -11,14 +11,27 @@ import 'package:pharma_connect_flutter/infrastructure/datasources/pharmacy_api.d
 import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 import 'package:pharma_connect_flutter/presentation/pages/user/user_home_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/owner_home_page.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({Key? key}) : super(key: key);
 
   Future<void> _handleAuth(BuildContext context, user) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userId', user.id);
-    await prefs.setString('role', user.role);
+    final sessionManager = SessionManager(prefs);
+
+    await sessionManager.saveUserId(user.id);
+
+    // Only save token if it exists
+    if (user.token != null) {
+      await sessionManager.saveToken(user.token);
+    }
+
+    // Save pharmacy ID if it exists in the user data
+    if (user.pharmacyId != null) {
+      await sessionManager.savePharmacyId(user.pharmacyId);
+    }
+
     if (user.role.toLowerCase() == 'admin') {
       Navigator.pushReplacement(
         context,

@@ -1,184 +1,302 @@
 import 'package:flutter/material.dart';
+import 'package:pharma_connect_flutter/domain/entities/inventory/inventory_item.dart';
+import 'package:pharma_connect_flutter/domain/repositories/inventory_repository.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/remote/inventory_api.dart';
+import 'package:pharma_connect_flutter/infrastructure/repositories/inventory_repository_impl.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
-class MyInventoryPage extends StatelessWidget {
+class MyInventoryPage extends StatefulWidget {
   const MyInventoryPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // TODO: Fetch owner's inventory data
-    final List<Map<String, String>> inventoryItems = [
-      {
-        'name': 'Paracetamols',
-        'category': 'Shshe',
-        'price': '12.00',
-        'expires': '2025-05-31',
-        'stock': '25',
-      },
-      {
-        'name': 'Medicine',
-        'category': 'Med',
-        'price': '15.00',
-        'expires': '2025-05-31',
-        'stock': '15',
-      },
-    ];
+  State<MyInventoryPage> createState() => _MyInventoryPageState();
+}
 
-    return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+class _MyInventoryPageState extends State<MyInventoryPage> {
+  late final InventoryRepository _inventoryRepository;
+  late final SessionManager _sessionManager;
+  List<InventoryItem> _inventoryItems = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeDependencies();
+  }
+
+  Future<void> _initializeDependencies() async {
+    final prefs = await SharedPreferences.getInstance();
+    _sessionManager = SessionManager(prefs);
+
+    final token = _sessionManager.getToken();
+    print(
+        'MyInventoryPage: Token retrieved from SessionManager: $token'); // Debug log
+
+    if (token == null) {
+      setState(() {
+        _error = 'No authentication token found. Please log in again.';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    _inventoryRepository = InventoryRepositoryImpl(
+      inventoryApi: InventoryApi(
+        client: http.Client(),
+        token: token,
+      ),
+    );
+    _loadInventory();
+  }
+
+  Future<void> _loadInventory() async {
+    try {
+      final pharmacyId = _sessionManager.getPharmacyId();
+      print(
+          'MyInventoryPage: Pharmacy ID retrieved from SessionManager: $pharmacyId'); // Debug log
+
+      if (pharmacyId == null) {
+        setState(() {
+          _error = 'Please complete your pharmacy profile first.';
+          _isLoading = false;
+        });
+        return;
+      }
+      print(
+          'MyInventoryPage: Fetching inventory for pharmacy ID: $pharmacyId'); // Debug log
+      final inventory = await _inventoryRepository.getInventory(pharmacyId);
+      setState(() {
+        _inventoryItems = inventory;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('MyInventoryPage: Error loading inventory: $e');
+      String errorMessage;
+      if (e.toString().contains('503')) {
+        errorMessage =
+            'The server is temporarily unavailable. Please try again later.';
+      } else if (e.toString().contains('401')) {
+        errorMessage = 'Your session has expired. Please log in again.';
+      } else if (e.toString().contains('404')) {
+        errorMessage = 'No inventory found for your pharmacy.';
+      } else {
+        errorMessage =
+            'An error occurred while loading inventory. Please try again.';
+      }
+      setState(() {
+        _error = errorMessage;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _error!.contains('temporarily unavailable')
+                  ? Icons.cloud_off
+                  : Icons.error_outline,
+              size: 48,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
               ),
             ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'My Inventory',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Manage your pharmacy inventory',
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadInventory,
+              child: const Text('Retry'),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: inventoryItems.length,
-              itemBuilder: (context, index) {
-                final item = inventoryItems[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+      );
+    }
+
+    if (_inventoryItems.isEmpty) {
+      return const Center(
+        child: Text('No inventory items available'),
+      );
+    }
+
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: _loadInventory,
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: _inventoryItems.length,
+          itemBuilder: (context, index) {
+            final item = _inventoryItems[index];
+            return Card(
+              elevation: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item['name']!,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Category: ${item['category']!}',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                        Expanded(
+                          child: Text(
+                            item.medicineName,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
-                            PopupMenuButton<String>(
-                              icon: Icon(
-                                Icons.more_vert,
-                                color: Theme.of(context).primaryColor,
-                              ),
-                              onSelected: (String result) {
-                                if (result == 'update') {
-                                  // TODO: Implement Update Details logic
-                                  print('Update Details for ${item['name']!}');
-                                } else if (result == 'delete') {
-                                  // TODO: Implement Delete Item logic
-                                  print('Delete Item ${item['name']!}');
-                                }
-                              },
-                              itemBuilder: (BuildContext context) =>
-                                  <PopupMenuEntry<String>>[
-                                const PopupMenuItem<String>(
-                                  value: 'update',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit, size: 20),
-                                      SizedBox(width: 8),
-                                      Text('Update Details'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.delete,
-                                          size: 20, color: Colors.red),
-                                      SizedBox(width: 8),
-                                      Text('Delete Item',
-                                          style: TextStyle(color: Colors.red)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                          ),
                         ),
-                        const Divider(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildInfoColumn('Price', 'Br ${item['price']!}'),
-                            _buildInfoColumn('Stock', item['stock']!),
-                            _buildInfoColumn('Expires', item['expires']!),
+                        PopupMenuButton<String>(
+                          onSelected: (value) async {
+                            if (value == 'edit') {
+                              // TODO: Implement edit functionality
+                            } else if (value == 'delete') {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Delete Item'),
+                                  content: const Text(
+                                      'Are you sure you want to delete this item?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirmed == true) {
+                                try {
+                                  final pharmacyId =
+                                      _sessionManager.getPharmacyId();
+                                  if (pharmacyId != null) {
+                                    await _inventoryRepository
+                                        .deleteInventoryItem(
+                                            pharmacyId, item.id);
+                                    _loadInventory();
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
                           ],
                         ),
                       ],
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.attach_money, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Price: \$${item.price.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.inventory_2, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Quantity: ${item.quantity}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Expiry Date: ${DateFormat('MMM dd, yyyy').format(item.expiryDate)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.info, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Status: ${item.status}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: item.status == 'active'
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
-    );
-  }
-
-  Widget _buildInfoColumn(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }
