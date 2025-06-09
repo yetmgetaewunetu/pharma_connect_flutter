@@ -137,6 +137,47 @@ class MedicineCard extends StatelessWidget {
             arguments: medicine,
           );
         },
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) async {
+            if (value == 'edit') {
+              // TODO: Implement EditMedicineScreen and navigation
+              Navigator.pushNamed(
+                context,
+                '/medicine/edit',
+                arguments: medicine,
+              );
+            } else if (value == 'delete') {
+              // TODO: Implement delete logic
+              final bloc = context.read<ListMedicineBloc>();
+              final repo =
+                  bloc.repository; // You may need to expose this or use DI
+              final result = await repo.deleteMedicine(medicine.id);
+              result.fold(
+                (failure) => showDialog(
+                  context: context,
+                  builder: (context) => ErrorDialog(message: failure.message),
+                ),
+                (_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Medicine deleted successfully!')),
+                  );
+                  bloc.add(const ListMedicineEvent.loaded());
+                },
+              );
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'edit',
+              child: Text('Edit'),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Delete'),
+            ),
+          ],
+        ),
       ),
     );
   }

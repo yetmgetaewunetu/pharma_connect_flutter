@@ -25,10 +25,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     super.initState();
     _pages = <Widget>[
       const AdminPharmaciesScreen(),
-      BlocProvider<MedicineCubit>(
-        create: (_) => GetIt.I<MedicineCubit>()..fetchMedicines(),
-        child: const AdminMedicinesScreen(),
-      ),
+      AdminMedicinesScreen(),
       const AddMedicineScreen(),
       const AdminApplicationsScreen(),
     ];

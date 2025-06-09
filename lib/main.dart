@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:pharma_connect_flutter/infrastructure/di/injection.dart';
 import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
+import 'package:pharma_connect_flutter/application/blocs/admin/medicine/medicine_cubit.dart';
 import 'package:pharma_connect_flutter/presentation/pages/auth/login_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/auth/register_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/home/home_page.dart';
+import 'package:pharma_connect_flutter/presentation/pages/medicine/edit_medicine_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,9 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(
           create: (context) => GetIt.I<AuthBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => GetIt.I<MedicineCubit>()..fetchMedicines(),
         ),
       ],
       child: MaterialApp(
@@ -43,8 +48,9 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginPage(),
           '/register': (context) => const RegisterPage(),
           '/home': (context) => const HomePage(),
+          '/medicine/edit': (context) => const EditMedicineScreen(),
         },
       ),
     );
   }
-} 
+}

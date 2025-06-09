@@ -4,7 +4,7 @@ import 'package:pharma_connect_flutter/application/blocs/admin/medicine/medicine
 import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
 
 class AdminMedicinesScreen extends StatelessWidget {
-  const AdminMedicinesScreen({Key? key}) : super(key: key);
+  AdminMedicinesScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +24,12 @@ class AdminMedicinesScreen extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
+          }
+          if (state is MedicineLoaded && _showDeleteSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Medicine deleted successfully!')),
+            );
+            _showDeleteSuccess = false;
           }
         },
         builder: (context, state) {
@@ -79,44 +85,46 @@ class AdminMedicinesScreen extends StatelessWidget {
   }
 
   Widget _buildMedicineItem(BuildContext context, Medicine medicine) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: ListTile(
-        leading: medicine.image.isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  medicine.image,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.medication),
+    return Builder(
+      builder: (itemContext) => Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: ListTile(
+          leading: medicine.image.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    medicine.image,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.medication),
+                  ),
+                )
+              : const Icon(Icons.medication, size: 48),
+          title: Text(
+            medicine.name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Category: ${medicine.category}'),
+              if (medicine.description.isNotEmpty)
+                Text(
+                  medicine.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              )
-            : const Icon(Icons.medication, size: 48),
-        title: Text(
-          medicine.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Category: ${medicine.category}'),
-            if (medicine.description.isNotEmpty)
-              Text(
-                medicine.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) =>
-              _handleMedicineAction(context, value, medicine),
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'edit', child: Text('Edit')),
-            PopupMenuItem(value: 'delete', child: Text('Delete')),
-          ],
+            ],
+          ),
+          trailing: PopupMenuButton<String>(
+            onSelected: (value) =>
+                _handleMedicineAction(itemContext, value, medicine),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            ],
+          ),
         ),
       ),
     );
@@ -130,7 +138,11 @@ class AdminMedicinesScreen extends StatelessWidget {
       BuildContext context, String action, Medicine medicine) {
     switch (action) {
       case 'edit':
-        _showEditMedicineDialog(context, medicine);
+        Navigator.pushNamed(
+          context,
+          '/medicine/edit',
+          arguments: medicine,
+        );
         break;
       case 'delete':
         _showDeleteConfirmation(context, medicine);
@@ -186,6 +198,8 @@ class AdminMedicinesScreen extends StatelessWidget {
     );
   }
 
+  bool _showDeleteSuccess = false;
+
   void _showDeleteConfirmation(BuildContext context, Medicine medicine) {
     showDialog(
       context: context,
@@ -199,6 +213,7 @@ class AdminMedicinesScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
+              _showDeleteSuccess = true;
               context.read<MedicineCubit>().deleteMedicine(medicine.id);
               Navigator.pop(context);
             },

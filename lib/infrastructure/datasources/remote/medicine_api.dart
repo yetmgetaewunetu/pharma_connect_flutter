@@ -23,7 +23,8 @@ class MedicineApi {
   }
 
   Future<Response> updateMedicine(Medicine medicine) async {
-    return await client.put('$baseUrl/${medicine.id}', data: medicine.toJson());
+    return await client.patch('$baseUrl/${medicine.id}',
+        data: medicine.toJson());
   }
 
   Future<Response> deleteMedicine(String id) async {
