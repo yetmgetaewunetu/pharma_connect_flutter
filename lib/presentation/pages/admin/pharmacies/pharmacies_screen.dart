@@ -163,7 +163,6 @@ class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
               trailing: PopupMenuButton<String>(
                 onSelected: (value) => _handlePopupSelection(value, pharmacy),
                 itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
                   PopupMenuItem(
                     value: 'delete',
                     child: Text('Delete'),
@@ -194,9 +193,7 @@ class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
   }
 
   void _handlePopupSelection(String value, Pharmacy pharmacy) {
-    if (value == 'edit') {
-      // TODO: Show edit dialog
-    } else if (value == 'delete') {
+    if (value == 'delete') {
       _showDeleteConfirmation(pharmacy);
     }
   }
