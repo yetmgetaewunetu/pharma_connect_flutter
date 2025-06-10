@@ -24,12 +24,16 @@ class InventoryApi {
         body: json.encode(data),
       );
 
-      if (response.statusCode == 200) {
+      print('Add Inventory Response Status: \\${response.statusCode}');
+      print('Add Inventory Response Body: \\${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return InventoryItem.fromJson(json.decode(response.body));
       } else {
         throw Exception('Failed to add inventory item');
       }
     } catch (e) {
+      print('Add Inventory Exception: $e');
       throw Exception('Error: $e');
     }
   }
