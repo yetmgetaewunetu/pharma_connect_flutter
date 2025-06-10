@@ -135,14 +135,18 @@ class AdminMedicinesScreen extends StatelessWidget {
   }
 
   void _handleMedicineAction(
-      BuildContext context, String action, Medicine medicine) {
+      BuildContext context, String action, Medicine medicine) async {
     switch (action) {
       case 'edit':
-        Navigator.pushNamed(
+        final result = await Navigator.pushNamed(
           context,
           '/medicine/edit',
           arguments: medicine,
         );
+        if (result != null) {
+          // If edit was successful, refresh the medicines list
+          _refreshMedicines(context);
+        }
         break;
       case 'delete':
         _showDeleteConfirmation(context, medicine);

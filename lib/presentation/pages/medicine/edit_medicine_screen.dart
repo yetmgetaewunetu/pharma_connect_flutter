@@ -21,16 +21,24 @@ class _EditMedicineScreenState extends State<EditMedicineScreen> {
   late Medicine _medicine;
 
   @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _categoryController = TextEditingController();
+    _imageController = TextEditingController();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)!.settings.arguments;
     if (args is Medicine) {
       _medicine = args;
-      _nameController = TextEditingController(text: _medicine.name);
-      _descriptionController =
-          TextEditingController(text: _medicine.description);
-      _categoryController = TextEditingController(text: _medicine.category);
-      _imageController = TextEditingController(text: _medicine.image);
+      _nameController.text = _medicine.name;
+      _descriptionController.text = _medicine.description;
+      _categoryController.text = _medicine.category;
+      _imageController.text = _medicine.image;
     }
   }
 
@@ -73,7 +81,7 @@ class _EditMedicineScreenState extends State<EditMedicineScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Medicine updated successfully!')),
           );
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(true);
         },
       );
     }

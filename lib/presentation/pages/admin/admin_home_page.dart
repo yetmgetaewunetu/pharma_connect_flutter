@@ -32,6 +32,15 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   void _onItemTapped(int index) {
+    // Always refresh medicines when Medicines tab is tapped
+    if (index == 1) {
+      // Medicines tab index
+      final contextToUse = context;
+      // Use addPostFrameCallback to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        contextToUse.read<MedicineCubit>().fetchMedicines();
+      });
+    }
     if (index != _selectedIndex) {
       setState(() {
         _selectedIndex = index;
