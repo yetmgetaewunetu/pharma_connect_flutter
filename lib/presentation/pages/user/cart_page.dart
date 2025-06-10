@@ -1,7 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pharma_connect_flutter/application/blocs/cart/cart_bloc.dart';
+import 'package:pharma_connect_flutter/infrastructure/repositories/cart_repository_impl.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/cart_api.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => CartBloc(CartRepositoryImpl(CartApi(ApiClient())))
+        ..add(const CartEvent.loadCart()),
+      child: const _CartPageBody(),
+    );
+  }
+}
+
+class _CartPageBody extends StatelessWidget {
+  const _CartPageBody({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -11,68 +29,96 @@ class CartPage extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
-              // TODO: Implement remove all logic
+              context.read<CartBloc>().add(const CartEvent.clearCart());
             },
             child:
                 const Text('Remove All', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView.builder(
-          itemCount: 1, // Placeholder count
-          itemBuilder: (context, index) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Padding(
+      body: BlocBuilder<CartBloc, CartState>(
+        builder: (context, state) {
+          return state.when(
+            initial: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (message) => Center(
+                child: Text('Error: $message',
+                    style: const TextStyle(color: Colors.red))),
+            loaded: (items) {
+              if (items.isEmpty) {
+                return const Center(child: Text('Your cart is empty'));
+              }
+              return Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    // Placeholder for image
-                    Container(
-                      width: 80,
-                      height: 80,
-                      color: Colors.grey[300],
-                      margin: const EdgeInsets.only(right: 16),
-                      // TODO: Add actual image
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Paracetamol',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16)), // Placeholder
-                          const SizedBox(height: 4),
-                          const Text('dagims pharmacy',
-                              style:
-                                  TextStyle(color: Colors.grey)), // Placeholder
-                          const SizedBox(height: 8),
-                          const Text('Price: Br 12.00',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold)), // Placeholder
-                          const SizedBox(height: 4),
-                          const Text('Quantity: 12',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold)), // Placeholder
-                        ],
+                child: ListView.builder(
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            if (item.imageUrl != null &&
+                                item.imageUrl!.isNotEmpty)
+                              Container(
+                                width: 80,
+                                height: 80,
+                                margin: const EdgeInsets.only(right: 16),
+                                child: Image.network(
+                                  item.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.grey[300],
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                width: 80,
+                                height: 80,
+                                color: Colors.grey[300],
+                                margin: const EdgeInsets.only(right: 16),
+                              ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                      'Price: Br ${item.price.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text('Quantity: ${item.quantity}',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                context
+                                    .read<CartBloc>()
+                                    .add(CartEvent.removeItem(item.id));
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete,
-                          color: Colors.red), // Delete icon
-                      onPressed: () {
-                        // TODO: Implement remove item logic
-                      },
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              ),
-            );
-          },
-        ),
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -6,7 +6,7 @@ class ApiClient {
   ApiClient() {
     dio = Dio(
       BaseOptions(
-        baseUrl: 'https://pharma-connect-backend-8cay.onrender.com/api/v1', 
+        baseUrl: 'http://10.0.2.2:5000/api/v1',
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         headers: {
@@ -30,4 +30,4 @@ class ApiClient {
   void clearAuthToken() {
     dio.options.headers.remove('Authorization');
   }
-} 
+}

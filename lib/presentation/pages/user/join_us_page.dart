@@ -83,26 +83,22 @@ class JoinUsPage extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement add license image logic
-                    },
-                    child: const Text('Add License Image'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement add pharmacy image logic
-                    },
-                    child: const Text('Add Pharmacy Image'),
-                  ),
-                ),
-              ],
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'License Image URL *',
+                hintText: 'Paste the URL of your license image',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Pharmacy Image URL *',
+                hintText: 'Paste the URL of your pharmacy image',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.url,
             ),
             const SizedBox(height: 24),
             const Text(
