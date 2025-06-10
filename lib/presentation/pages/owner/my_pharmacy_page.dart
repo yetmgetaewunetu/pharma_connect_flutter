@@ -6,6 +6,7 @@ import 'package:pharma_connect_flutter/infrastructure/datasources/remote/pharmac
 import 'package:pharma_connect_flutter/infrastructure/repositories/pharmacy_repository_impl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pharma_connect_flutter/presentation/pages/owner/edit_pharmacy_screen.dart';
 
 class MyPharmacyPage extends StatefulWidget {
   const MyPharmacyPage({Key? key}) : super(key: key);
@@ -39,9 +40,10 @@ class _MyPharmacyPageState extends State<MyPharmacyPage> {
   Future<void> _loadPharmacy() async {
     try {
       final pharmacyId = _sessionManager.getPharmacyId();
+      print('Loaded pharmacyId from session: $pharmacyId');
       if (pharmacyId == null) {
         setState(() {
-          _error = 'No pharmacy ID found. Please log in again.';
+          _error = 'No pharmacy ID found. Please register your pharmacy.';
           _isLoading = false;
         });
         return;
@@ -53,10 +55,27 @@ class _MyPharmacyPageState extends State<MyPharmacyPage> {
         _isLoading = false;
       });
     } catch (e) {
+      String errorMsg = e.toString();
+      if (errorMsg.contains('404')) {
+        errorMsg = 'Pharmacy not found. Please register your pharmacy.';
+      }
       setState(() {
-        _error = e.toString();
+        _error = errorMsg;
         _isLoading = false;
       });
+    }
+  }
+
+  void _navigateToEditPharmacy() async {
+    final updated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditPharmacyScreen(pharmacy: _pharmacy!),
+      ),
+    );
+    if (updated == true) {
+      setState(() => _isLoading = true);
+      await _loadPharmacy();
     }
   }
 
@@ -119,9 +138,7 @@ class _MyPharmacyPageState extends State<MyPharmacyPage> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          // TODO: Implement edit pharmacy details functionality
-                        },
+                        onPressed: _navigateToEditPharmacy,
                       ),
                     ],
                   ),
