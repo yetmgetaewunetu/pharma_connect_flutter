@@ -27,13 +27,6 @@ class _CartPageBody extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My Saved Medicines'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: () {
-              context.read<CartBloc>().add(const CartEvent.loadCart());
-            },
-          ),
           TextButton(
             onPressed: () {
               context.read<CartBloc>().add(const CartEvent.clearCart());
