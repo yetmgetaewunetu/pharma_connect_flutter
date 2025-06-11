@@ -31,14 +31,14 @@ class PharmacyDetailPage extends StatelessWidget {
           }
           final pharmacy = snapshot.data!;
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                 Text(pharmacy.name,
                     style: const TextStyle(
                         fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
+            const SizedBox(height: 16),
                 _buildDetailRow('Owner Name:', pharmacy.ownerName),
                 _buildDetailRow('License Number:', pharmacy.licenseNumber),
                 _buildDetailRow('Email:', pharmacy.email),
@@ -50,9 +50,9 @@ class PharmacyDetailPage extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     child: Image.network(pharmacy.pharmacyImage!),
-                  ),
-              ],
             ),
+          ],
+        ),
           );
         },
       ),

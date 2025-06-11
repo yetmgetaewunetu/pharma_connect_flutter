@@ -33,7 +33,7 @@ Future<void> init() async {
     () => OrderApi(getIt<ApiClient>()),
   );
   getIt.registerLazySingleton<CartApi>(
-    () => CartApi(getIt<ApiClient>()),
+    () => CartApi(getIt<ApiClient>().dio),
   );
   getIt.registerLazySingleton<MedicineApi>(
     () => MedicineApi(client: getIt<ApiClient>().dio),
@@ -58,4 +58,4 @@ Future<void> init() async {
   getIt.registerFactory(() => OrdersBloc(getIt<OrderRepository>()));
   getIt.registerFactory(() => CartBloc(getIt<CartRepository>()));
   getIt.registerFactory(() => MedicineCubit(getIt<MedicineRepository>()));
-} 
+}

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:pharma_connect_flutter/presentation/pages/user/cart_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/user/join_us_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/user/search_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pharma_connect_flutter/application/blocs/cart/cart_bloc.dart';
 
 class UserHomePage extends StatefulWidget {
   const UserHomePage({Key? key}) : super(key: key);
@@ -130,6 +132,10 @@ class _UserHomePageState extends State<UserHomePage> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 2) {
+      BlocProvider.of<CartBloc>(context, listen: false)
+          .add(const CartEvent.loadCart());
+    }
   }
 
   @override

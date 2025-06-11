@@ -212,11 +212,17 @@ class _SearchPageBodyState extends State<_SearchPageBody> {
                                     icon: const Icon(Icons.add_shopping_cart),
                                     onPressed: () {
                                       final cartItem = CartItem(
-                                        id: result.inventoryId,
-                                        name: result.pharmacyName,
+                                        pharmacyName: result.pharmacyName,
+                                        inventoryId: result.inventoryId,
+                                        address: result.address,
+                                        photo: result.photo,
                                         price: result.price,
                                         quantity: 1,
-                                        imageUrl: result.photo,
+                                        latitude: result.latitude,
+                                        longitude: result.longitude,
+                                        pharmacyId: result.pharmacyId,
+                                        medicineId: result.inventoryId,
+                                        medicineName: '',
                                       );
                                       context
                                           .read<CartBloc>()

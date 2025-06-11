@@ -39,9 +39,9 @@ class AddMedicineScreen extends StatelessWidget {
           );
         },
         child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Add Medicine to Platform'),
-          ),
+      appBar: AppBar(
+        title: const Text('Add Medicine to Platform'),
+      ),
           body: BlocBuilder<AddMedicineBloc, AddMedicineState>(
             builder: (context, state) {
               return state.when(
@@ -84,10 +84,10 @@ class _AddMedicineFormState extends State<AddMedicineForm> {
   void _submitForm() {
     if (_formKey.currentState?.validate() ?? false) {
       final medicine = Medicine(
-        id: '', // Will be assigned by the server
-        name: _nameController.text,
-        description: _descriptionController.text,
-        category: _categoryController.text,
+          id: '', // Will be assigned by the server
+          name: _nameController.text,
+          description: _descriptionController.text,
+          category: _categoryController.text,
         image: _imageController.text,
       );
       context.read<AddMedicineBloc>().add(AddMedicineEvent.submitted(medicine));

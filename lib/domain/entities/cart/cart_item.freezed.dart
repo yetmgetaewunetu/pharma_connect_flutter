@@ -20,11 +20,17 @@ CartItem _$CartItemFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$CartItem {
-  String get id => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
+  String get pharmacyName => throw _privateConstructorUsedError;
+  String get inventoryId => throw _privateConstructorUsedError;
+  String get address => throw _privateConstructorUsedError;
+  String get photo => throw _privateConstructorUsedError;
   double get price => throw _privateConstructorUsedError;
   int get quantity => throw _privateConstructorUsedError;
-  String? get imageUrl => throw _privateConstructorUsedError;
+  double get latitude => throw _privateConstructorUsedError;
+  double get longitude => throw _privateConstructorUsedError;
+  String get pharmacyId => throw _privateConstructorUsedError;
+  String get medicineId => throw _privateConstructorUsedError;
+  String get medicineName => throw _privateConstructorUsedError;
 
   /// Serializes this CartItem to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -42,7 +48,17 @@ abstract class $CartItemCopyWith<$Res> {
       _$CartItemCopyWithImpl<$Res, CartItem>;
   @useResult
   $Res call(
-      {String id, String name, double price, int quantity, String? imageUrl});
+      {String pharmacyName,
+      String inventoryId,
+      String address,
+      String photo,
+      double price,
+      int quantity,
+      double latitude,
+      double longitude,
+      String pharmacyId,
+      String medicineId,
+      String medicineName});
 }
 
 /// @nodoc
@@ -60,20 +76,34 @@ class _$CartItemCopyWithImpl<$Res, $Val extends CartItem>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? id = null,
-    Object? name = null,
+    Object? pharmacyName = null,
+    Object? inventoryId = null,
+    Object? address = null,
+    Object? photo = null,
     Object? price = null,
     Object? quantity = null,
-    Object? imageUrl = freezed,
+    Object? latitude = null,
+    Object? longitude = null,
+    Object? pharmacyId = null,
+    Object? medicineId = null,
+    Object? medicineName = null,
   }) {
     return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
+      pharmacyName: null == pharmacyName
+          ? _value.pharmacyName
+          : pharmacyName // ignore: cast_nullable_to_non_nullable
               as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
+      inventoryId: null == inventoryId
+          ? _value.inventoryId
+          : inventoryId // ignore: cast_nullable_to_non_nullable
+              as String,
+      address: null == address
+          ? _value.address
+          : address // ignore: cast_nullable_to_non_nullable
+              as String,
+      photo: null == photo
+          ? _value.photo
+          : photo // ignore: cast_nullable_to_non_nullable
               as String,
       price: null == price
           ? _value.price
@@ -83,10 +113,26 @@ class _$CartItemCopyWithImpl<$Res, $Val extends CartItem>
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
-      imageUrl: freezed == imageUrl
-          ? _value.imageUrl
-          : imageUrl // ignore: cast_nullable_to_non_nullable
-              as String?,
+      latitude: null == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      longitude: null == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      pharmacyId: null == pharmacyId
+          ? _value.pharmacyId
+          : pharmacyId // ignore: cast_nullable_to_non_nullable
+              as String,
+      medicineId: null == medicineId
+          ? _value.medicineId
+          : medicineId // ignore: cast_nullable_to_non_nullable
+              as String,
+      medicineName: null == medicineName
+          ? _value.medicineName
+          : medicineName // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -100,7 +146,17 @@ abstract class _$$CartItemImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String id, String name, double price, int quantity, String? imageUrl});
+      {String pharmacyName,
+      String inventoryId,
+      String address,
+      String photo,
+      double price,
+      int quantity,
+      double latitude,
+      double longitude,
+      String pharmacyId,
+      String medicineId,
+      String medicineName});
 }
 
 /// @nodoc
@@ -116,20 +172,34 @@ class __$$CartItemImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? id = null,
-    Object? name = null,
+    Object? pharmacyName = null,
+    Object? inventoryId = null,
+    Object? address = null,
+    Object? photo = null,
     Object? price = null,
     Object? quantity = null,
-    Object? imageUrl = freezed,
+    Object? latitude = null,
+    Object? longitude = null,
+    Object? pharmacyId = null,
+    Object? medicineId = null,
+    Object? medicineName = null,
   }) {
     return _then(_$CartItemImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
+      pharmacyName: null == pharmacyName
+          ? _value.pharmacyName
+          : pharmacyName // ignore: cast_nullable_to_non_nullable
               as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
+      inventoryId: null == inventoryId
+          ? _value.inventoryId
+          : inventoryId // ignore: cast_nullable_to_non_nullable
+              as String,
+      address: null == address
+          ? _value.address
+          : address // ignore: cast_nullable_to_non_nullable
+              as String,
+      photo: null == photo
+          ? _value.photo
+          : photo // ignore: cast_nullable_to_non_nullable
               as String,
       price: null == price
           ? _value.price
@@ -139,10 +209,26 @@ class __$$CartItemImplCopyWithImpl<$Res>
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
-      imageUrl: freezed == imageUrl
-          ? _value.imageUrl
-          : imageUrl // ignore: cast_nullable_to_non_nullable
-              as String?,
+      latitude: null == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      longitude: null == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      pharmacyId: null == pharmacyId
+          ? _value.pharmacyId
+          : pharmacyId // ignore: cast_nullable_to_non_nullable
+              as String,
+      medicineId: null == medicineId
+          ? _value.medicineId
+          : medicineId // ignore: cast_nullable_to_non_nullable
+              as String,
+      medicineName: null == medicineName
+          ? _value.medicineName
+          : medicineName // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -151,29 +237,47 @@ class __$$CartItemImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$CartItemImpl implements _CartItem {
   const _$CartItemImpl(
-      {required this.id,
-      required this.name,
+      {required this.pharmacyName,
+      required this.inventoryId,
+      required this.address,
+      required this.photo,
       required this.price,
       required this.quantity,
-      this.imageUrl});
+      required this.latitude,
+      required this.longitude,
+      required this.pharmacyId,
+      required this.medicineId,
+      required this.medicineName});
 
   factory _$CartItemImpl.fromJson(Map<String, dynamic> json) =>
       _$$CartItemImplFromJson(json);
 
   @override
-  final String id;
+  final String pharmacyName;
   @override
-  final String name;
+  final String inventoryId;
+  @override
+  final String address;
+  @override
+  final String photo;
   @override
   final double price;
   @override
   final int quantity;
   @override
-  final String? imageUrl;
+  final double latitude;
+  @override
+  final double longitude;
+  @override
+  final String pharmacyId;
+  @override
+  final String medicineId;
+  @override
+  final String medicineName;
 
   @override
   String toString() {
-    return 'CartItem(id: $id, name: $name, price: $price, quantity: $quantity, imageUrl: $imageUrl)';
+    return 'CartItem(pharmacyName: $pharmacyName, inventoryId: $inventoryId, address: $address, photo: $photo, price: $price, quantity: $quantity, latitude: $latitude, longitude: $longitude, pharmacyId: $pharmacyId, medicineId: $medicineId, medicineName: $medicineName)';
   }
 
   @override
@@ -181,19 +285,42 @@ class _$CartItemImpl implements _CartItem {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$CartItemImpl &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.name, name) || other.name == name) &&
+            (identical(other.pharmacyName, pharmacyName) ||
+                other.pharmacyName == pharmacyName) &&
+            (identical(other.inventoryId, inventoryId) ||
+                other.inventoryId == inventoryId) &&
+            (identical(other.address, address) || other.address == address) &&
+            (identical(other.photo, photo) || other.photo == photo) &&
             (identical(other.price, price) || other.price == price) &&
             (identical(other.quantity, quantity) ||
                 other.quantity == quantity) &&
-            (identical(other.imageUrl, imageUrl) ||
-                other.imageUrl == imageUrl));
+            (identical(other.latitude, latitude) ||
+                other.latitude == latitude) &&
+            (identical(other.longitude, longitude) ||
+                other.longitude == longitude) &&
+            (identical(other.pharmacyId, pharmacyId) ||
+                other.pharmacyId == pharmacyId) &&
+            (identical(other.medicineId, medicineId) ||
+                other.medicineId == medicineId) &&
+            (identical(other.medicineName, medicineName) ||
+                other.medicineName == medicineName));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, name, price, quantity, imageUrl);
+  int get hashCode => Object.hash(
+      runtimeType,
+      pharmacyName,
+      inventoryId,
+      address,
+      photo,
+      price,
+      quantity,
+      latitude,
+      longitude,
+      pharmacyId,
+      medicineId,
+      medicineName);
 
   /// Create a copy of CartItem
   /// with the given fields replaced by the non-null parameter values.
@@ -213,25 +340,43 @@ class _$CartItemImpl implements _CartItem {
 
 abstract class _CartItem implements CartItem {
   const factory _CartItem(
-      {required final String id,
-      required final String name,
+      {required final String pharmacyName,
+      required final String inventoryId,
+      required final String address,
+      required final String photo,
       required final double price,
       required final int quantity,
-      final String? imageUrl}) = _$CartItemImpl;
+      required final double latitude,
+      required final double longitude,
+      required final String pharmacyId,
+      required final String medicineId,
+      required final String medicineName}) = _$CartItemImpl;
 
   factory _CartItem.fromJson(Map<String, dynamic> json) =
       _$CartItemImpl.fromJson;
 
   @override
-  String get id;
+  String get pharmacyName;
   @override
-  String get name;
+  String get inventoryId;
+  @override
+  String get address;
+  @override
+  String get photo;
   @override
   double get price;
   @override
   int get quantity;
   @override
-  String? get imageUrl;
+  double get latitude;
+  @override
+  double get longitude;
+  @override
+  String get pharmacyId;
+  @override
+  String get medicineId;
+  @override
+  String get medicineName;
 
   /// Create a copy of CartItem
   /// with the given fields replaced by the non-null parameter values.

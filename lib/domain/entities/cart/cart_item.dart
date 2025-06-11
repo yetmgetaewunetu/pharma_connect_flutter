@@ -6,12 +6,19 @@ part 'cart_item.g.dart';
 @freezed
 class CartItem with _$CartItem {
   const factory CartItem({
-    required String id,
-    required String name,
+    required String pharmacyName,
+    required String inventoryId,
+    required String address,
+    required String photo,
     required double price,
     required int quantity,
-    String? imageUrl,
+    required double latitude,
+    required double longitude,
+    required String pharmacyId,
+    required String medicineId,
+    required String medicineName,
   }) = _CartItem;
 
-  factory CartItem.fromJson(Map<String, dynamic> json) => _$CartItemFromJson(json);
-} 
+  factory CartItem.fromJson(Map<String, dynamic> json) =>
+      _$CartItemFromJson(json);
+}

@@ -22,7 +22,7 @@ class CartRepositoryImpl implements CartRepository {
   @override
   Future<Either<Failure, List<CartItem>>> addItem(CartItem item) async {
     try {
-      final items = await api.addItem(item);
+      final items = await api.addItem(item.inventoryId);
       return Right(items);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -32,7 +32,11 @@ class CartRepositoryImpl implements CartRepository {
   @override
   Future<Either<Failure, List<CartItem>>> removeItem(String itemId) async {
     try {
-      final items = await api.removeItem(itemId);
+      // itemId should be inventoryId, but we also need pharmacyId and medicineId
+      // For now, assume itemId is inventoryId and fetch the item from the cart
+      final cartItems = await api.getCartItems();
+      final item = cartItems.firstWhere((i) => i.inventoryId == itemId);
+      final items = await api.removeItem(item.pharmacyId, item.medicineId);
       return Right(items);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -40,13 +44,10 @@ class CartRepositoryImpl implements CartRepository {
   }
 
   @override
-  Future<Either<Failure, List<CartItem>>> updateQuantity(String itemId, int quantity) async {
-    try {
-      final items = await api.updateQuantity(itemId, quantity);
-      return Right(items);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<Either<Failure, List<CartItem>>> updateQuantity(
+      String itemId, int quantity) async {
+    // Not supported by backend
+    return Left(ServerFailure('Update quantity not supported'));
   }
 
   @override
@@ -61,11 +62,7 @@ class CartRepositoryImpl implements CartRepository {
 
   @override
   Future<Either<Failure, List<CartItem>>> checkout() async {
-    try {
-      final items = await api.checkout();
-      return Right(items);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    // Not supported by backend
+    return Left(ServerFailure('Checkout not supported'));
   }
 }

@@ -35,3 +35,4 @@ class SearchMedicineCubit extends Cubit<SearchMedicineState> {
     }
   }
 }
+ 
