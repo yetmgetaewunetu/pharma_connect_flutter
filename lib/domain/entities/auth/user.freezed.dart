@@ -24,6 +24,8 @@ mixin _$User {
   String get email => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get role => throw _privateConstructorUsedError;
+  String? get firstName => throw _privateConstructorUsedError;
+  String? get lastName => throw _privateConstructorUsedError;
   String? get phone => throw _privateConstructorUsedError;
   String? get address => throw _privateConstructorUsedError;
   String? get pharmacyId => throw _privateConstructorUsedError;
@@ -48,6 +50,8 @@ abstract class $UserCopyWith<$Res> {
       String email,
       String name,
       String role,
+      String? firstName,
+      String? lastName,
       String? phone,
       String? address,
       String? pharmacyId,
@@ -73,6 +77,8 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? email = null,
     Object? name = null,
     Object? role = null,
+    Object? firstName = freezed,
+    Object? lastName = freezed,
     Object? phone = freezed,
     Object? address = freezed,
     Object? pharmacyId = freezed,
@@ -95,6 +101,14 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
               as String,
+      firstName: freezed == firstName
+          ? _value.firstName
+          : firstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastName: freezed == lastName
+          ? _value.lastName
+          : lastName // ignore: cast_nullable_to_non_nullable
+              as String?,
       phone: freezed == phone
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
@@ -127,6 +141,8 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
       String email,
       String name,
       String role,
+      String? firstName,
+      String? lastName,
       String? phone,
       String? address,
       String? pharmacyId,
@@ -149,6 +165,8 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? email = null,
     Object? name = null,
     Object? role = null,
+    Object? firstName = freezed,
+    Object? lastName = freezed,
     Object? phone = freezed,
     Object? address = freezed,
     Object? pharmacyId = freezed,
@@ -171,6 +189,14 @@ class __$$UserImplCopyWithImpl<$Res>
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
               as String,
+      firstName: freezed == firstName
+          ? _value.firstName
+          : firstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastName: freezed == lastName
+          ? _value.lastName
+          : lastName // ignore: cast_nullable_to_non_nullable
+              as String?,
       phone: freezed == phone
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
@@ -199,6 +225,8 @@ class _$UserImpl implements _User {
       required this.email,
       required this.name,
       required this.role,
+      this.firstName,
+      this.lastName,
       this.phone,
       this.address,
       this.pharmacyId,
@@ -216,6 +244,10 @@ class _$UserImpl implements _User {
   @override
   final String role;
   @override
+  final String? firstName;
+  @override
+  final String? lastName;
+  @override
   final String? phone;
   @override
   final String? address;
@@ -226,7 +258,7 @@ class _$UserImpl implements _User {
 
   @override
   String toString() {
-    return 'User(id: $id, email: $email, name: $name, role: $role, phone: $phone, address: $address, pharmacyId: $pharmacyId, token: $token)';
+    return 'User(id: $id, email: $email, name: $name, role: $role, firstName: $firstName, lastName: $lastName, phone: $phone, address: $address, pharmacyId: $pharmacyId, token: $token)';
   }
 
   @override
@@ -238,6 +270,10 @@ class _$UserImpl implements _User {
             (identical(other.email, email) || other.email == email) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.role, role) || other.role == role) &&
+            (identical(other.firstName, firstName) ||
+                other.firstName == firstName) &&
+            (identical(other.lastName, lastName) ||
+                other.lastName == lastName) &&
             (identical(other.phone, phone) || other.phone == phone) &&
             (identical(other.address, address) || other.address == address) &&
             (identical(other.pharmacyId, pharmacyId) ||
@@ -247,8 +283,8 @@ class _$UserImpl implements _User {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, email, name, role, phone, address, pharmacyId, token);
+  int get hashCode => Object.hash(runtimeType, id, email, name, role, firstName,
+      lastName, phone, address, pharmacyId, token);
 
   /// Create a copy of User
   /// with the given fields replaced by the non-null parameter values.
@@ -272,6 +308,8 @@ abstract class _User implements User {
       required final String email,
       required final String name,
       required final String role,
+      final String? firstName,
+      final String? lastName,
       final String? phone,
       final String? address,
       final String? pharmacyId,
@@ -287,6 +325,10 @@ abstract class _User implements User {
   String get name;
   @override
   String get role;
+  @override
+  String? get firstName;
+  @override
+  String? get lastName;
   @override
   String? get phone;
   @override

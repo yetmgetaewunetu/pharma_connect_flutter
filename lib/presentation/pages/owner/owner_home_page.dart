@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/my_pharmacy_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/add_inventory_medicine_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/my_inventory_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/auth_notifier.dart';
 // import 'package:flutter_bloc/flutter_bloc.dart';
 // import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
 
@@ -58,13 +60,16 @@ class _OwnerHomePageState extends State<OwnerHomePage> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              // TODO: Use Riverpod's AuthNotifier for logout if available
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/login', (route) => false);
-            },
+          Consumer(
+            builder: (context, ref, _) => IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                final notifier = ref.read(authProvider.notifier);
+                await notifier.logout();
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/login', (route) => false);
+              },
+            ),
           ),
         ],
       ),

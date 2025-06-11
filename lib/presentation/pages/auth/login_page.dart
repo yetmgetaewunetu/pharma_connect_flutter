@@ -30,6 +30,12 @@ class LoginPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final notifier = ref.read(authProvider.notifier);
+    // Get email from route arguments if present
+    String? initialEmail;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['email'] is String) {
+      initialEmail = args['email'] as String;
+    }
     ref.listen<AsyncValue<User?>>(authProvider, (prev, next) {
       next.whenOrNull(
         data: (user) {
@@ -57,8 +63,11 @@ class LoginPage extends ConsumerWidget {
     return Scaffold(
       body: authState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        data: (_) => LoginForm(notifier: notifier),
-        error: (err, _) => LoginForm(notifier: notifier, error: err.toString()),
+        data: (_) => LoginForm(notifier: notifier, initialEmail: initialEmail),
+        error: (err, _) => LoginForm(
+            notifier: notifier,
+            error: err.toString(),
+            initialEmail: initialEmail),
       ),
     );
   }
@@ -67,7 +76,9 @@ class LoginPage extends ConsumerWidget {
 class LoginForm extends StatefulWidget {
   final AuthNotifier notifier;
   final String? error;
-  const LoginForm({Key? key, required this.notifier, this.error})
+  final String? initialEmail;
+  const LoginForm(
+      {Key? key, required this.notifier, this.error, this.initialEmail})
       : super(key: key);
 
   @override
@@ -78,6 +89,14 @@ class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEmail != null) {
+      _emailController.text = widget.initialEmail!;
+    }
+  }
 
   @override
   void dispose() {

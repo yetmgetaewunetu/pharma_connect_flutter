@@ -26,9 +26,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     );
   }
 
-  Future<void> register(String email, String password, String name) async {
+  Future<void> register(String email, String password, String name,
+      {String? lastName, String? confirmPassword}) async {
     state = const AsyncValue.loading();
-    final result = await repository.register(email, password, name);
+    final result = await repository.register(email, password, name,
+        lastName: lastName, confirmPassword: confirmPassword);
     result.fold(
       (failure) =>
           state = AsyncValue.error(failure.message, StackTrace.current),
@@ -37,13 +39,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<void> logout() async {
-    state = const AsyncValue.loading();
-    final result = await repository.logout();
-    result.fold(
-      (failure) =>
-          state = AsyncValue.error(failure.message, StackTrace.current),
-      (_) => state = const AsyncValue.data(null),
-    );
+    final sessionManager = ref.read(sessionManagerProvider);
+    await sessionManager.clearSession();
+    state = const AsyncValue.data(null);
   }
 
   Future<void> getCurrentUser() async {

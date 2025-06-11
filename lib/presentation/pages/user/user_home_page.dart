@@ -22,97 +22,238 @@ class _UserHomePageState extends ConsumerState<UserHomePage> {
     _pages = <Widget>[
       // Home Page Content
       SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Find medicines',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search for Medicine',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: BorderSide.none,
+            // Search bar
+            Container(
+              margin: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
-                  filled: true,
-                  fillColor: Colors.grey[200],
+                ],
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search',
+                  hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14, fontWeight: FontWeight.w400),
+                  prefixIcon: Icon(Icons.search, color: Colors.grey[500], size: 20),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 onTap: () {
                   setState(() {
                     _selectedIndex = 1; // Navigate to Search tab
                   });
-                }),
-            const SizedBox(height: 24),
-            const Text(
-              'Nearby pharmacies',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 150,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: 2,
-                itemBuilder: (context, index) {
-                  return Card(
-                    margin: const EdgeInsets.only(right: 16),
-                    child: Container(
-                      width: 150,
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.location_on,
-                                  color: Theme.of(context).primaryColor),
-                              SizedBox(width: 4),
-                              Expanded(
-                                child: Text('Pharma Connect',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Text('gssh'),
-                          Text('2.8 km'),
-                        ],
-                      ),
-                    ),
-                  );
                 },
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Most Searched Medicines',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            
+            // Nearby Pharmacies section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Nearby Pharmacies',
+                style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black.withOpacity(0.8),
+                  letterSpacing: -0.3,
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             SizedBox(
-              height: 60,
+              height: 190,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: 3,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 itemBuilder: (context, index) {
-                  return Card(
-                    margin: const EdgeInsets.only(right: 16),
-                    child: Container(
-                      width: 150,
-                      padding: const EdgeInsets.all(16),
-                      alignment: Alignment.center,
-                      child: Text('Paracetamol'),
+                  return Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                          ),
+                          child: Container(
+                            height: 120,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: index % 2 == 0 
+                                  ? [Colors.blue[50]!, Colors.blue[100]!]
+                                  : [Colors.red[50]!, Colors.red[100]!],
+                              ),
+                            ),
+                            child: Center(
+                              child: index % 2 == 0 
+                                ? Icon(Icons.medication_liquid, size: 50, color: Colors.blue[400])
+                                : Icon(Icons.medication, size: 50, color: Colors.red[400]),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Soloda Pharmacy',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 12, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Bandung',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
               ),
             ),
+            
+            // Most Searched section
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Most Searched',
+                style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black.withOpacity(0.8),
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 190,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: 3,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                          ),
+                          child: Container(
+
+                            height: 120,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: index % 2 == 0 
+                                  ? [Colors.purple[50]!, Colors.purple[100]!]
+                                  : [Colors.amber[50]!, Colors.amber[100]!],
+                              ),
+                            ),
+                            child: Center(
+                              child: index % 2 == 0 
+                                ? Icon(Icons.medication_liquid, size: 50, color: Colors.purple[400])
+                                : Icon(Icons.medication, size: 50, color: Colors.amber[700]),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Soloda Pharmacy',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 12, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Bandung',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -131,17 +272,50 @@ class _UserHomePageState extends ConsumerState<UserHomePage> {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Pharma Connect'),
+        backgroundColor: const Color(0xFF2196F3),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.local_pharmacy, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Pharma Connect',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.pushNamed(context, '/profile');
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.person, color: Colors.white, size: 20),
+              onPressed: () {
+                Navigator.pushNamed(context, '/profile');
+              },
+            ),
           ),
         ],
       ),
@@ -149,30 +323,74 @@ class _UserHomePageState extends ConsumerState<UserHomePage> {
         index: _selectedIndex,
         children: _pages,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Cart',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group_add),
-            label: 'Join Us',
-          ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white.withOpacity(0.7),
+          backgroundColor: const Color(0xFF2196F3),
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+          elevation: 0,
+          items: [
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _selectedIndex == 0 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.home),
+              ),
+              label: 'home',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _selectedIndex == 1 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.search),
+              ),
+              label: 'search',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _selectedIndex == 2 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.shopping_cart),
+              ),
+              label: 'my medicine',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _selectedIndex == 3 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.group_add),
+              ),
+              label: 'Join Us',
+            ),
+          ],
+
+        ),
       ),
     );
   }

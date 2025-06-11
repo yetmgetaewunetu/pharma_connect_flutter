@@ -9,7 +9,11 @@ class RegisterPage extends ConsumerWidget {
   const RegisterPage({Key? key}) : super(key: key);
 
   void _handleRegister(BuildContext context, User user) {
-    Navigator.pushReplacementNamed(context, '/home');
+    Navigator.pushReplacementNamed(
+      context,
+      '/login',
+      arguments: {'email': user.email},
+    );
   }
 
   @override
@@ -24,6 +28,8 @@ class RegisterPage extends ConsumerWidget {
           }
         },
         error: (err, _) {
+          if (err != null && err.toString().toLowerCase().contains('null'))
+            return;
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -67,6 +73,7 @@ class RegisterForm extends StatefulWidget {
 class _RegisterFormState extends State<RegisterForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -74,6 +81,7 @@ class _RegisterFormState extends State<RegisterForm> {
   @override
   void dispose() {
     _nameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -82,10 +90,17 @@ class _RegisterFormState extends State<RegisterForm> {
 
   void _onSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
+      final firstName = _nameController.text.trim();
+      final lastName = _lastNameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      final confirmPassword = _confirmPasswordController.text.trim();
       widget.notifier.register(
-        _emailController.text,
-        _passwordController.text,
-        _nameController.text,
+        email,
+        password,
+        firstName,
+        lastName: lastName,
+        confirmPassword: confirmPassword,
       );
     }
   }
@@ -117,12 +132,26 @@ class _RegisterFormState extends State<RegisterForm> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: 'Name',
+                labelText: 'First Name',
                 prefixIcon: Icon(Icons.person),
               ),
               validator: (value) {
                 if (value?.isEmpty ?? true) {
-                  return 'Please enter your name';
+                  return 'Please enter your first name';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _lastNameController,
+              decoration: const InputDecoration(
+                labelText: 'Last Name',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+              validator: (value) {
+                if (value?.isEmpty ?? true) {
+                  return 'Please enter your last name';
                 }
                 return null;
               },
@@ -172,7 +201,7 @@ class _RegisterFormState extends State<RegisterForm> {
               ),
               obscureText: true,
               validator: (value) {
-                if (value != _passwordController.text) {
+                if (value?.trim() != _passwordController.text.trim()) {
                   return 'Passwords do not match';
                 }
                 return null;

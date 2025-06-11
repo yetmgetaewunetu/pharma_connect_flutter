@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/auth_notifier.dart';
 import 'package:pharma_connect_flutter/presentation/pages/cart/cart_screen.dart';
-import 'package:pharma_connect_flutter/presentation/pages/orders/orders_screen.dart';
 import 'package:pharma_connect_flutter/presentation/pages/profile/profile_screen.dart';
+import 'package:pharma_connect_flutter/domain/entities/auth/user.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   int _selectedIndex = 0;
 
   late final List<Widget> _pages;
@@ -21,7 +21,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _pages = <Widget>[
-      const OrdersScreen(),
       const CartScreen(),
       const ProfileScreen(),
     ];
@@ -35,41 +34,37 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<User?>>(authProvider, (prev, next) {
+      next.whenOrNull(
+        data: (user) {
+          if (user == null) {
+            Navigator.of(context)
+                .pushNamedAndRemoveUntil('/login', (route) => false);
+          }
+        },
+      );
+    });
+    final notifier = ref.read(authProvider.notifier);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pharma Connect'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthBloc>().add(const AuthEvent.logout());
+            onPressed: () async {
+              await notifier.logout();
             },
           ),
         ],
       ),
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          state.maybeWhen(
-            unauthenticated: () {
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/login', (route) => false);
-            },
-            orElse: () {},
-          );
-        },
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: _pages,
-        ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag),
-            label: 'Orders',
-          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart),
             label: 'Cart',

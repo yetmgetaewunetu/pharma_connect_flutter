@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
-import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
-class JoinUsPage extends StatefulWidget {
+final dioProvider = Provider<Dio>((ref) {
+  // You should have a central Dio provider in your app. Adjust as needed.
+  return Dio(BaseOptions(baseUrl: 'http://10.4.113.71:5000/api/v1'));
+});
+
+class JoinUsPage extends ConsumerStatefulWidget {
   const JoinUsPage({Key? key}) : super(key: key);
 
   @override
-  State<JoinUsPage> createState() => _JoinUsPageState();
+  ConsumerState<JoinUsPage> createState() => _JoinUsPageState();
 }
 
-class _JoinUsPageState extends State<JoinUsPage> {
+class _JoinUsPageState extends ConsumerState<JoinUsPage> {
   final _formKey = GlobalKey<FormState>();
   final _pharmacyNameController = TextEditingController();
   final _ownerNameController = TextEditingController();
@@ -98,7 +103,7 @@ class _JoinUsPageState extends State<JoinUsPage> {
       _success = null;
     });
     try {
-      final dio = GetIt.I<ApiClient>().dio;
+      final dio = ref.read(dioProvider);
       final latitude = _parseLatitude(_googleMapsLinkController.text.trim());
       final longitude = _parseLongitude(_googleMapsLinkController.text.trim());
       final payload = {

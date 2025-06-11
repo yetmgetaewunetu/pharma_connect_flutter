@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/medicine_api.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/pharmacy_api.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/auth_api.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/order_api.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/inventory_api.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/application_api.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/medicine_api.dart'
@@ -76,11 +75,6 @@ final pharmacyApiProvider = Provider<remote_pharmacy.PharmacyApi>((ref) {
 final authApiProvider = Provider<AuthApi>((ref) {
   final dio = ref.watch(dioProvider);
   return AuthApi(dio);
-});
-
-final orderApiProvider = Provider<OrderApi>((ref) {
-  final dio = ref.watch(dioProvider);
-  return OrderApi(dio);
 });
 
 final inventoryApiProvider = Provider<InventoryApi>((ref) {

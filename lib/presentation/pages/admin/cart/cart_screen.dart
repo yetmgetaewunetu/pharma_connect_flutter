@@ -1,47 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/cart/cart_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/cart_notifier.dart';
 import 'package:pharma_connect_flutter/domain/entities/cart/cart_item.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/loading_indicator.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/error_dialog.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends ConsumerWidget {
   const CartScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cartState = ref.watch(cartProvider);
+    final notifier = ref.read(cartProvider.notifier);
+    ref.listen<AsyncValue<List<CartItem>>>(cartProvider, (prev, next) {
+      next.whenOrNull(
+        error: (err, _) {
+          showDialog(
+            context: context,
+            builder: (context) => ErrorDialog(message: err.toString()),
+          );
+        },
+      );
+    });
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cart'),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: () {
-              context.read<CartBloc>().add(const CartEvent.clearCart());
+            onPressed: () async {
+              await notifier.clearCart();
             },
           ),
         ],
       ),
-      body: BlocConsumer<CartBloc, CartState>(
-        listener: (context, state) {
-          state.maybeWhen(
-            error: (message) => showDialog(
-              context: context,
-              builder: (context) => ErrorDialog(message: message),
-            ),
-            orElse: () {},
-          );
-        },
-        builder: (context, state) {
-          return state.maybeWhen(
-            loading: () => const Center(child: LoadingIndicator()),
-            loaded: (items) => items.isEmpty
-                ? const Center(child: Text('Your cart is empty'))
-                : CartItemsList(items: items),
-            error: (message) => Center(child: Text(message)),
-            orElse: () => const SizedBox.shrink(),
-          );
-        },
+      body: cartState.when(
+        loading: () => const Center(child: LoadingIndicator()),
+        data: (items) => items.isEmpty
+            ? const Center(child: Text('Your cart is empty'))
+            : CartItemsList(items: items, notifier: notifier),
+        error: (err, _) => Center(child: Text(err.toString())),
       ),
     );
   }
@@ -51,9 +49,11 @@ class CartItemsList extends StatelessWidget {
   const CartItemsList({
     Key? key,
     required this.items,
+    required this.notifier,
   }) : super(key: key);
 
   final List<CartItem> items;
+  final CartNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +64,7 @@ class CartItemsList extends StatelessWidget {
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
-              return CartItemTile(item: item);
+              return CartItemTile(item: item, notifier: notifier);
             },
           ),
         ),
@@ -78,24 +78,26 @@ class CartItemTile extends StatelessWidget {
   const CartItemTile({
     Key? key,
     required this.item,
+    required this.notifier,
   }) : super(key: key);
 
   final CartItem item;
+  final CartNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
-        leading: item.imageUrl != null
+        leading: item.photo.isNotEmpty
             ? Image.network(
-                item.imageUrl!,
+                item.photo,
                 width: 50,
                 height: 50,
                 fit: BoxFit.cover,
               )
             : const Icon(Icons.medication),
-        title: Text(item.name),
+        title: Text(item.medicineName),
         subtitle: Text('\$${item.price.toStringAsFixed(2)}'),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -104,12 +106,9 @@ class CartItemTile extends StatelessWidget {
               icon: const Icon(Icons.remove),
               onPressed: () {
                 if (item.quantity > 1) {
-                  context.read<CartBloc>().add(
-                        CartEvent.updateQuantity(
-                          item.id,
-                          item.quantity - 1,
-                        ),
-                      );
+                  notifier.addItem(
+                    item.copyWith(quantity: item.quantity - 1),
+                  );
                 }
               },
             ),
@@ -117,20 +116,15 @@ class CartItemTile extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: () {
-                context.read<CartBloc>().add(
-                      CartEvent.updateQuantity(
-                        item.id,
-                        item.quantity + 1,
-                      ),
-                    );
+                notifier.addItem(
+                  item.copyWith(quantity: item.quantity + 1),
+                );
               },
             ),
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {
-                context.read<CartBloc>().add(
-                      CartEvent.removeItem(item.id),
-                    );
+                notifier.removeItem(item.medicineId);
               },
             ),
           ],
@@ -195,7 +189,7 @@ class CartSummary extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  context.read<CartBloc>().add(const CartEvent.checkout());
+                  // Implement checkout logic if needed
                 },
                 child: const Text('Checkout'),
               ),
@@ -205,4 +199,4 @@ class CartSummary extends StatelessWidget {
       ),
     );
   }
-} 
+}

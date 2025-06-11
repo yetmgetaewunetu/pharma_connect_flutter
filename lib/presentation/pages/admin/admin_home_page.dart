@@ -3,6 +3,9 @@ import 'package:pharma_connect_flutter/presentation/pages/admin/medicines/medici
 import 'package:pharma_connect_flutter/presentation/pages/admin/pharmacies/pharmacies_screen.dart';
 import 'package:pharma_connect_flutter/presentation/pages/admin/add_medicine_screen.dart';
 import 'package:pharma_connect_flutter/presentation/pages/admin/applications/applications_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/auth_notifier.dart';
+import 'package:pharma_connect_flutter/application/notifiers/application_notifier.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({Key? key}) : super(key: key);
@@ -31,6 +34,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 3) {
+      // Refresh applications when Applications tab is tapped
+      final container = ProviderScope.containerOf(context, listen: false);
+      final notifier = container.read(applicationProvider.notifier);
+      notifier.loadApplications();
+    }
   }
 
   @override
@@ -39,12 +48,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/login', (route) => false);
-            },
+          Consumer(
+            builder: (context, ref, _) => IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                final notifier = ref.read(authProvider.notifier);
+                await notifier.logout();
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/login', (route) => false);
+              },
+            ),
           ),
         ],
       ),

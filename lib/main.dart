@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
 import 'package:pharma_connect_flutter/presentation/pages/user/user_home_page.dart';
+import 'package:pharma_connect_flutter/presentation/pages/admin/admin_home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +52,7 @@ class MyApp extends StatelessWidget {
         '/owner': (context) => const OwnerHomePage(),
         '/user': (context) => const UserHomePage(),
         '/profile': (context) => const ProfileScreen(),
+        '/admin': (context) => const AdminHomePage(),
       },
     );
   }

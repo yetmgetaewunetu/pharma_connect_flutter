@@ -25,7 +25,7 @@ class AuthApi {
         },
       );
 
-      print('Login Response: ${response.data}'); // Debug log
+      print('Login Response: \\n${response.data}'); // Debug log
       print('Response Headers: ${response.headers}'); // Debug log
 
       if (response.data['success'] == true) {
@@ -37,11 +37,15 @@ class AuthApi {
           setAuthToken(token);
         }
 
+        print('Parsed user role: \\n[32m${userData['role']}[0m'); // Debug log
+
         // Create a basic user from login response
         final user = User(
           id: userData['userId']?.toString() ?? '',
           email: email,
-          name: userData['name']?.toString() ?? '',
+          name: (userData['name'] ?? userData['firstName'] ?? '').toString(),
+          firstName: userData['firstName']?.toString() ?? '',
+          lastName: userData['lastName']?.toString() ?? '',
           role: userData['role']?.toString() ?? 'user',
           pharmacyId: userData['pharmacyId']?.toString(),
           token: token,
@@ -61,14 +65,17 @@ class AuthApi {
     }
   }
 
-  Future<User> register(String email, String password, String name) async {
+  Future<User> register(String email, String password, String firstName,
+      {String? lastName, String? confirmPassword}) async {
     try {
       final response = await dio.post(
         '$_baseUrl/users/signUp',
         data: {
           'email': email,
           'password': password,
-          'name': name,
+          'firstName': firstName,
+          if (lastName != null) 'lastName': lastName,
+          if (confirmPassword != null) 'confirmPassword': confirmPassword,
         },
       );
 
@@ -82,11 +89,13 @@ class AuthApi {
         }
 
         final user = User(
-          id: userData['userId'],
+          id: userData['userId']?.toString() ?? '',
           email: email,
-          name: name,
-          role: userData['role'] ?? 'user',
-          pharmacyId: userData['pharmacyId'],
+          name: (userData['name'] ?? firstName ?? '').toString(),
+          firstName: userData['firstName']?.toString() ?? '',
+          lastName: userData['lastName']?.toString() ?? '',
+          role: userData['role']?.toString() ?? 'user',
+          pharmacyId: userData['pharmacyId']?.toString(),
           token: token,
         );
         return user;

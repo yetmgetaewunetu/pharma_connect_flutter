@@ -10,6 +10,8 @@ class User with _$User {
     required String email,
     required String name,
     required String role,
+    String? firstName,
+    String? lastName,
     String? phone,
     String? address,
     String? pharmacyId,
