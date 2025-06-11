@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/cart_notifier.dart';
+import 'package:pharma_connect_flutter/domain/entities/cart/cart_item.dart';
 import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
 
-class MedicineDetailsScreen extends StatelessWidget {
+class MedicineDetailsScreen extends ConsumerWidget {
   const MedicineDetailsScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final medicine = ModalRoute.of(context)!.settings.arguments as Medicine;
 
     return Scaffold(
@@ -84,11 +87,23 @@ class MedicineDetailsScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO: Implement add to cart functionality
+                  // Use only available fields from Medicine
+                  final cartItem = CartItem(
+                    pharmacyName: '', // TODO: Populate if available
+                    inventoryId: '', // TODO: Populate if available
+                    address: '', // TODO: Populate if available
+                    photo: medicine.image,
+                    price: 0.0, // TODO: Populate if available
+                    quantity: 1,
+                    latitude: 0.0, // TODO: Populate if available
+                    longitude: 0.0, // TODO: Populate if available
+                    pharmacyId: '', // TODO: Populate if available
+                    medicineId: medicine.id,
+                    medicineName: medicine.name,
+                  );
+                  ref.read(cartProvider.notifier).addItem(cartItem);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Added to cart'),
-                    ),
+                    const SnackBar(content: Text('Added to cart')),
                   );
                 },
                 child: const Text('Add to Cart'),

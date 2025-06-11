@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:pharma_connect_flutter/core/errors/failures.dart';
 import 'package:pharma_connect_flutter/domain/repositories/application_repository.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/application_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
 class ApplicationRepositoryImpl implements ApplicationRepository {
   final ApplicationApi api;
@@ -27,4 +29,20 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
       return Left(ServerFailure(e.message ?? 'Failed to reject application'));
     }
   }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getApplications() async {
+    try {
+      final apps = await api.getApplications();
+      return Right(apps);
+    } on DioException catch (e) {
+      return Left(ServerFailure(e.message ?? 'Failed to fetch applications'));
+    }
+  }
 }
+
+final applicationRepositoryProvider =
+    Provider<ApplicationRepositoryImpl>((ref) {
+  final api = ref.watch(applicationApiProvider);
+  return ApplicationRepositoryImpl(api);
+});

@@ -4,6 +4,8 @@ import 'package:pharma_connect_flutter/core/errors/failures.dart';
 import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
 import 'package:pharma_connect_flutter/domain/repositories/medicine_repository.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/medicine_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
 class MedicineRepositoryImpl implements MedicineRepository {
   final MedicineApi api;
@@ -110,3 +112,8 @@ class MedicineRepositoryImpl implements MedicineRepository {
     }
   }
 }
+
+final medicineRepositoryProvider = Provider<MedicineRepositoryImpl>((ref) {
+  final api = ref.watch(medicineApiProvider);
+  return MedicineRepositoryImpl(api);
+});

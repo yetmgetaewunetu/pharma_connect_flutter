@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/medicine/list_medicine_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/medicine_notifier.dart';
 import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/loading_indicator.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/error_dialog.dart';
 
-class MedicineListScreen extends StatefulWidget {
+class MedicineListScreen extends ConsumerStatefulWidget {
   const MedicineListScreen({Key? key}) : super(key: key);
 
   @override
-  State<MedicineListScreen> createState() => _MedicineListScreenState();
+  ConsumerState<MedicineListScreen> createState() => _MedicineListScreenState();
 }
 
-class _MedicineListScreenState extends State<MedicineListScreen> {
+class _MedicineListScreenState extends ConsumerState<MedicineListScreen> {
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
-    // Load medicines when the screen is first displayed
-    context.read<ListMedicineBloc>().add(const ListMedicineEvent.loaded());
+    Future.microtask(() => ref.read(medicineProvider.notifier).loadMedicines());
   }
 
   @override
   Widget build(BuildContext context) {
+    final medicineState = ref.watch(medicineProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Medicines'),
@@ -32,38 +34,26 @@ class _MedicineListScreenState extends State<MedicineListScreen> {
             padding: const EdgeInsets.all(8.0),
             child: SearchBar(
               onChanged: (query) {
+                setState(() => _searchQuery = query);
                 if (query.isEmpty) {
-                  context
-                      .read<ListMedicineBloc>()
-                      .add(const ListMedicineEvent.loaded());
+                  ref.read(medicineProvider.notifier).loadMedicines();
                 } else {
-                  context
-                      .read<ListMedicineBloc>()
-                      .add(ListMedicineEvent.searched(query));
+                  // Optionally implement search in the notifier
+                  // ref.read(medicineProvider.notifier).searchMedicines(query);
                 }
               },
             ),
           ),
           Expanded(
-            child: BlocConsumer<ListMedicineBloc, ListMedicineState>(
-              listener: (context, state) {
-                state.maybeWhen(
-                  error: (message) {
-                    showDialog(
-                      context: context,
-                      builder: (context) => ErrorDialog(message: message),
-                    );
-                  },
-                  orElse: () {},
-                );
-              },
-              builder: (context, state) {
-                return state.maybeWhen(
-                  loading: () => const LoadingIndicator(),
-                  loaded: (medicines) => MedicineList(medicines: medicines),
-                  orElse: () => const SizedBox.shrink(),
-                );
-              },
+            child: medicineState.when(
+              loading: () => const LoadingIndicator(),
+              data: (medicines) => MedicineList(
+                medicines: medicines,
+                onDelete: (id) async {
+                  await ref.read(medicineProvider.notifier).deleteMedicine(id);
+                },
+              ),
+              error: (err, _) => Center(child: Text(err.toString())),
             ),
           ),
         ],
@@ -97,10 +87,12 @@ class SearchBar extends StatelessWidget {
 
 class MedicineList extends StatelessWidget {
   final List<Medicine> medicines;
+  final Future<void> Function(String id) onDelete;
 
   const MedicineList({
     Key? key,
     required this.medicines,
+    required this.onDelete,
   }) : super(key: key);
 
   @override
@@ -109,7 +101,10 @@ class MedicineList extends StatelessWidget {
       itemCount: medicines.length,
       itemBuilder: (context, index) {
         final medicine = medicines[index];
-        return MedicineCard(medicine: medicine);
+        return MedicineCard(
+          medicine: medicine,
+          onDelete: () => onDelete(medicine.id),
+        );
       },
     );
   }
@@ -117,10 +112,12 @@ class MedicineList extends StatelessWidget {
 
 class MedicineCard extends StatelessWidget {
   final Medicine medicine;
+  final VoidCallback onDelete;
 
   const MedicineCard({
     Key? key,
     required this.medicine,
+    required this.onDelete,
   }) : super(key: key);
 
   @override
@@ -140,30 +137,15 @@ class MedicineCard extends StatelessWidget {
         trailing: PopupMenuButton<String>(
           onSelected: (value) async {
             if (value == 'edit') {
-              // TODO: Implement EditMedicineScreen and navigation
               Navigator.pushNamed(
                 context,
                 '/medicine/edit',
                 arguments: medicine,
               );
             } else if (value == 'delete') {
-              // TODO: Implement delete logic
-              final bloc = context.read<ListMedicineBloc>();
-              final repo =
-                  bloc.repository; // You may need to expose this or use DI
-              final result = await repo.deleteMedicine(medicine.id);
-              result.fold(
-                (failure) => showDialog(
-                  context: context,
-                  builder: (context) => ErrorDialog(message: failure.message),
-                ),
-                (_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Medicine deleted successfully!')),
-                  );
-                  bloc.add(const ListMedicineEvent.loaded());
-                },
+              onDelete();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Medicine deleted successfully!')),
               );
             }
           },

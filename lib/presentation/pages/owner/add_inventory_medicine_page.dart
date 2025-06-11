@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/medicine/list_medicine_bloc.dart';
-import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/medicine_notifier.dart';
+import 'package:pharma_connect_flutter/application/notifiers/inventory_notifier.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
+import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/inventory_api.dart';
 import 'package:pharma_connect_flutter/infrastructure/repositories/inventory_repository_impl.dart';
 import 'package:http/http.dart' as http;
@@ -12,15 +13,16 @@ import 'package:pharma_connect_flutter/infrastructure/repositories/medicine_repo
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/medicine_api.dart';
 import 'package:dio/dio.dart';
 
-class AddInventoryMedicinePage extends StatefulWidget {
+class AddInventoryMedicinePage extends ConsumerStatefulWidget {
   const AddInventoryMedicinePage({Key? key}) : super(key: key);
 
   @override
-  State<AddInventoryMedicinePage> createState() =>
+  ConsumerState<AddInventoryMedicinePage> createState() =>
       _AddInventoryMedicinePageState();
 }
 
-class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
+class _AddInventoryMedicinePageState
+    extends ConsumerState<AddInventoryMedicinePage> {
   final _formKey = GlobalKey<FormState>();
   Medicine? _selectedMedicine;
   final TextEditingController _quantityController = TextEditingController();
@@ -28,26 +30,7 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
   final TextEditingController _expiryDateController = TextEditingController();
   DateTime? _selectedExpiryDate;
   bool _isSubmitting = false;
-
-  late SessionManager _sessionManager;
-  String? _pharmacyId;
-  String? _token;
   String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeSession();
-  }
-
-  Future<void> _initializeSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    _sessionManager = SessionManager(prefs);
-    setState(() {
-      _pharmacyId = _sessionManager.getPharmacyId();
-      _token = _sessionManager.getToken();
-    });
-  }
 
   @override
   void dispose() {
@@ -97,11 +80,8 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
     }
   }
 
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate() ||
-        _selectedMedicine == null ||
-        _pharmacyId == null ||
-        _token == null) {
+  Future<void> _submitForm(String pharmacyId, String userId) async {
+    if (!_formKey.currentState!.validate() || _selectedMedicine == null) {
       setState(() {
         _error = 'Please fill all fields and make sure you are logged in.';
       });
@@ -112,24 +92,19 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
       _error = null;
     });
     try {
-      final repo = InventoryRepositoryImpl(
-        inventoryApi: InventoryApi(
-          client: http.Client(),
-          token: _token!,
-        ),
-      );
-      final userId = _sessionManager.getUserId();
       final data = {
         'medicineId': _selectedMedicine!.id,
         'medicineName': _selectedMedicine!.name,
-        'pharmacy': _pharmacyId!,
+        'pharmacy': pharmacyId,
         'price': double.parse(_priceController.text),
         'quantity': int.parse(_quantityController.text),
         'expiryDate': _selectedExpiryDate!.toIso8601String(),
         'category': _selectedMedicine!.category,
         'updatedBy': userId,
       };
-      await repo.addInventoryItem(_pharmacyId!, data);
+      await ref
+          .read(inventoryProvider(pharmacyId).notifier)
+          .addInventoryItem(data);
       setState(() {
         _isSubmitting = false;
         _error = null;
@@ -146,113 +121,89 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        final errorMsg = e.toString();
-        if (errorMsg
-            .contains("type 'Null' is not a subtype of type 'String'")) {
-          _error = 'An unexpected error occurred. Please try again.';
-        } else {
-          _error = errorMsg;
-        }
+        _error = e.toString();
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final sessionManager = ref.watch(sessionManagerProvider);
+    final pharmacyId = sessionManager.getPharmacyId();
+    final userId = sessionManager.getUserId();
+    if (pharmacyId == null || userId == null) {
+      return const Scaffold(
+        body: Center(
+            child: Text('Please complete your pharmacy profile and login.')),
+      );
+    }
+    final medicineState = ref.watch(medicineProvider);
+    List<Medicine> medicines = [];
+    bool isLoading = false;
+    String? error;
+    medicineState.when(
+      loading: () {
+        isLoading = true;
+      },
+      error: (err, _) {
+        error = err.toString();
+      },
+      data: (items) {
+        medicines = items;
+      },
+    );
     return Scaffold(
-      body: BlocProvider(
-        create: (context) => ListMedicineBloc(
-          MedicineRepositoryImpl(
-            MedicineApi(
-              client:
-                  Dio(BaseOptions(baseUrl: 'http://10.4.113.71:5000/api/v1')),
-              baseUrl: '/medicines',
-            ),
-          ),
-        )..add(const ListMedicineEvent.loaded()),
-        child: BlocBuilder<ListMedicineBloc, ListMedicineState>(
-          builder: (context, state) {
-            final medicines = state.maybeWhen(
-              loaded: (medicines) => medicines,
-              orElse: () => <Medicine>[],
-            );
-            // Debug prints
-            print('Medicines list length: \\${medicines.length}');
-            print('Selected medicine: \\${_selectedMedicine?.name}');
-            // If not using Freezed for Medicine, ensure == and hashCode are implemented based on id
-            final dropdownValue = medicines.contains(_selectedMedicine)
-                ? _selectedMedicine
-                : null;
-            if (medicines.isEmpty) {
-              return const Center(child: Text('No medicines available'));
-            }
-            return Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    ),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Add Medicine',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Add new medicine to your inventory',
-                        style: TextStyle(
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : error != null
+              ? Center(
+                  child:
+                      Text(error!, style: const TextStyle(color: Colors.red)))
+              : medicines.isEmpty
+                  ? const Center(child: Text('No medicines available'))
+                  : SingleChildScrollView(
                       child: Padding(
                         padding: const EdgeInsets.all(20),
                         child: Form(
                           key: _formKey,
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormField(
-                                context,
-                                'Medicine Name',
-                                DropdownButtonFormField<Medicine>(
-                                  decoration:
-                                      _getInputDecoration('Select Medicine'),
-                                  value: dropdownValue,
-                                  items: medicines.map((medicine) {
-                                    return DropdownMenuItem<Medicine>(
-                                      value: medicine,
-                                      child: Text(medicine.name),
-                                    );
-                                  }).toList(),
-                                  onChanged: (medicine) {
-                                    setState(() {
-                                      _selectedMedicine = medicine;
-                                    });
-                                  },
-                                  validator: (value) => value == null
-                                      ? 'Please select a medicine'
-                                      : null,
+                              const Text(
+                                'Add Medicine',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
                                 ),
+                              ),
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Add new medicine to your inventory',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              DropdownButtonFormField<Medicine>(
+                                value: medicines.contains(_selectedMedicine)
+                                    ? _selectedMedicine
+                                    : null,
+                                items: medicines
+                                    .map((medicine) =>
+                                        DropdownMenuItem<Medicine>(
+                                          value: medicine,
+                                          child: Text(medicine.name),
+                                        ))
+                                    .toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedMedicine = value;
+                                  });
+                                },
+                                decoration:
+                                    _getInputDecoration('Select medicine'),
+                                validator: (value) =>
+                                    value == null ? 'Select a medicine' : null,
                               ),
                               const SizedBox(height: 20),
                               _buildFormField(
@@ -291,13 +242,7 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
                                 TextFormField(
                                   controller: _expiryDateController,
                                   decoration:
-                                      _getInputDecoration('Select expiry date')
-                                          .copyWith(
-                                    suffixIcon: Icon(
-                                      Icons.calendar_today,
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                  ),
+                                      _getInputDecoration('Select expiry date'),
                                   readOnly: true,
                                   onTap: () => _pickExpiryDate(context),
                                   validator: (value) =>
@@ -306,41 +251,28 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
                                           : null,
                                 ),
                               ),
-                              const SizedBox(height: 30),
-                              ElevatedButton(
-                                onPressed: _isSubmitting ? null : _submitForm,
-                                style: ElevatedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  backgroundColor:
-                                      Theme.of(context).primaryColor,
+                              const SizedBox(height: 24),
+                              if (_error != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Text(_error!,
+                                      style:
+                                          const TextStyle(color: Colors.red)),
                                 ),
+                              ElevatedButton(
+                                onPressed: _isSubmitting
+                                    ? null
+                                    : () => _submitForm(pharmacyId, userId),
                                 child: _isSubmitting
                                     ? const CircularProgressIndicator(
                                         color: Colors.white)
-                                    : const Text(
-                                        'Add to Inventory',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white),
-                                      ),
+                                    : const Text('Add to Inventory'),
                               ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
     );
   }
 

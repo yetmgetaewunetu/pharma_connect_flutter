@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/auth_notifier.dart';
 import 'package:pharma_connect_flutter/domain/entities/auth/user.dart';
-import 'package:pharma_connect_flutter/presentation/widgets/loading_indicator.dart';
-import 'package:pharma_connect_flutter/presentation/widgets/error_dialog.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final notifier = ref.read(authProvider.notifier);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -17,39 +17,17 @@ class ProfileScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              context.read<AuthBloc>().add(const AuthEvent.logout());
+              notifier.logout();
             },
           ),
         ],
       ),
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          state.maybeWhen(
-            unauthenticated: () {
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/login', (route) => false);
-            },
-            orElse: () {},
-          );
-        },
-        child: BlocConsumer<AuthBloc, AuthState>(
-          listener: (context, state) {
-            state.maybeWhen(
-              error: (message) => showDialog(
-                context: context,
-                builder: (context) => ErrorDialog(message: message),
-              ),
-              orElse: () {},
-            );
-          },
-          builder: (context, state) {
-            return state.maybeWhen(
-              loading: () => const Center(child: LoadingIndicator()),
-              authenticated: (user) => ProfileContent(user: user),
-              orElse: () => const SizedBox.shrink(),
-            );
-          },
-        ),
+      body: authState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text(err.toString())),
+        data: (user) => user == null
+            ? const Center(child: Text('Not logged in'))
+            : ProfileContent(user: user),
       ),
     );
   }
@@ -139,12 +117,12 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
   void _submitForm() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthBloc>().add(
-            AuthEvent.changePassword(
-              _currentPasswordController.text,
-              _newPasswordController.text,
-            ),
-          );
+      // context.read<AuthBloc>().add(
+      //       AuthEvent.changePassword(
+      //         _currentPasswordController.text,
+      //         _newPasswordController.text,
+      //       ),
+      //     );
       Navigator.pop(context);
     }
   }

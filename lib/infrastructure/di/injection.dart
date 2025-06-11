@@ -1,3 +1,6 @@
+// This file is now obsolete for Bloc/Cubit. Use Riverpod providers for DI. You can remove all Bloc/Cubit registrations and usages here.
+// If you still use GetIt for other singletons, keep only those. Otherwise, this file can be deleted.
+
 import 'package:get_it/get_it.dart';
 import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
 import 'package:pharma_connect_flutter/application/blocs/cart/cart_bloc.dart';

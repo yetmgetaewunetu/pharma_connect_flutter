@@ -8,99 +8,18 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/edit_inventory_item_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/inventory_notifier.dart';
 
-class MyInventoryPage extends StatefulWidget {
+class MyInventoryPage extends ConsumerStatefulWidget {
   const MyInventoryPage({Key? key}) : super(key: key);
 
   @override
-  State<MyInventoryPage> createState() => _MyInventoryPageState();
+  ConsumerState<MyInventoryPage> createState() => _MyInventoryPageState();
 }
 
-class _MyInventoryPageState extends State<MyInventoryPage> {
-  late final InventoryRepository _inventoryRepository;
-  late final SessionManager _sessionManager;
-  List<InventoryItem> _inventoryItems = [];
-  List<InventoryItem> _filteredItems = [];
-  bool _isLoading = true;
-  String? _error;
+class _MyInventoryPageState extends ConsumerState<MyInventoryPage> {
   String _searchQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeDependencies();
-  }
-
-  Future<void> _initializeDependencies() async {
-    final prefs = await SharedPreferences.getInstance();
-    _sessionManager = SessionManager(prefs);
-
-    final token = _sessionManager.getToken();
-    print(
-        'MyInventoryPage: Token retrieved from SessionManager: $token'); // Debug log
-
-    if (token == null) {
-      setState(() {
-        _error = 'No authentication token found. Please log in again.';
-        _isLoading = false;
-      });
-      return;
-    }
-
-    _inventoryRepository = InventoryRepositoryImpl(
-      inventoryApi: InventoryApi(
-        client: http.Client(),
-        token: token,
-      ),
-    );
-    _loadInventory();
-  }
-
-  Future<void> _loadInventory() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final pharmacyId = _sessionManager.getPharmacyId();
-      print(
-          'MyInventoryPage: Pharmacy ID retrieved from SessionManager: $pharmacyId'); // Debug log
-
-      if (pharmacyId == null) {
-        setState(() {
-          _error = 'Please complete your pharmacy profile first.';
-          _isLoading = false;
-        });
-        return;
-      }
-      print(
-          'MyInventoryPage: Fetching inventory for pharmacy ID: $pharmacyId'); // Debug log
-      final inventory = await _inventoryRepository.getInventory(pharmacyId);
-      setState(() {
-        _inventoryItems = inventory;
-        _filteredItems = _applySearch(_searchQuery, inventory);
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('MyInventoryPage: Error loading inventory: $e');
-      String errorMessage;
-      if (e.toString().contains('503')) {
-        errorMessage =
-            'The server is temporarily unavailable. Please try again later.';
-      } else if (e.toString().contains('401')) {
-        errorMessage = 'Your session has expired. Please log in again.';
-      } else if (e.toString().contains('404')) {
-        errorMessage = 'No inventory found for your pharmacy.';
-      } else {
-        errorMessage =
-            'An error occurred while loading inventory. Please try again.';
-      }
-      setState(() {
-        _error = errorMessage;
-        _isLoading = false;
-      });
-    }
-  }
 
   List<InventoryItem> _applySearch(String query, List<InventoryItem> items) {
     if (query.isEmpty) return items;
@@ -113,16 +32,16 @@ class _MyInventoryPageState extends State<MyInventoryPage> {
   void _onSearchChanged(String value) {
     setState(() {
       _searchQuery = value;
-      _filteredItems = _applySearch(value, _inventoryItems);
     });
   }
 
-  Future<void> _onDeleteItem(InventoryItem item) async {
+  Future<void> _onDeleteItem(String pharmacyId, InventoryItem item) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Item'),
-        content: Text('Are you sure you want to delete ${item.medicineName}?'),
+        content:
+            Text('Are you sure you want to delete \\${item.medicineName}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -137,15 +56,13 @@ class _MyInventoryPageState extends State<MyInventoryPage> {
     );
     if (confirmed == true) {
       try {
-        final pharmacyId = _sessionManager.getPharmacyId();
-        if (pharmacyId != null) {
-          await _inventoryRepository.deleteInventoryItem(pharmacyId, item.id);
-          _loadInventory();
-        }
+        await ref
+            .read(inventoryProvider(pharmacyId).notifier)
+            .deleteInventoryItem(item.id);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Error: \\${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -161,20 +78,44 @@ class _MyInventoryPageState extends State<MyInventoryPage> {
       ),
     ).then((result) {
       if (result == true) {
-        _loadInventory();
+        setState(() {}); // Triggers a rebuild to refresh inventory
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final sessionManager = ref.watch(sessionManagerProvider);
+    final pharmacyId = sessionManager.getPharmacyId();
+    if (pharmacyId == null) {
+      return const Scaffold(
+        body:
+            Center(child: Text('Please complete your pharmacy profile first.')),
+      );
+    }
+    final inventoryState = ref.watch(inventoryProvider(pharmacyId));
+    final notifier = ref.read(inventoryProvider(pharmacyId).notifier);
+    List<InventoryItem> filteredItems = [];
+    bool isLoading = false;
+    String? error;
+    inventoryState.when(
+      loading: () {
+        isLoading = true;
+      },
+      error: (err, _) {
+        error = err.toString();
+      },
+      data: (items) {
+        filteredItems = _applySearch(_searchQuery, items);
+      },
+    );
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Inventory'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadInventory,
+            onPressed: () => notifier.loadInventory(),
           ),
         ],
       ),
@@ -194,23 +135,23 @@ class _MyInventoryPageState extends State<MyInventoryPage> {
             ),
           ),
           Expanded(
-            child: _isLoading
+            child: isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _error != null
+                : error != null
                     ? Center(
-                        child: Text(_error!,
+                        child: Text(error!,
                             style: const TextStyle(color: Colors.red)),
                       )
-                    : _filteredItems.isEmpty
+                    : filteredItems.isEmpty
                         ? const Center(
                             child: Text('No inventory items available'))
                         : RefreshIndicator(
-                            onRefresh: _loadInventory,
+                            onRefresh: () => notifier.loadInventory(),
                             child: ListView.builder(
                               padding: const EdgeInsets.all(16),
-                              itemCount: _filteredItems.length,
+                              itemCount: filteredItems.length,
                               itemBuilder: (context, index) {
-                                final item = _filteredItems[index];
+                                final item = filteredItems[index];
                                 return Card(
                                   elevation: 4,
                                   margin: const EdgeInsets.only(bottom: 16),
@@ -258,7 +199,8 @@ class _MyInventoryPageState extends State<MyInventoryPage> {
                                                 if (value == 'edit') {
                                                   _onEditItem(item);
                                                 } else if (value == 'delete') {
-                                                  _onDeleteItem(item);
+                                                  _onDeleteItem(
+                                                      pharmacyId, item);
                                                 }
                                               },
                                               itemBuilder: (context) => [

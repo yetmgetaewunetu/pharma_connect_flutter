@@ -1,17 +1,23 @@
 import 'package:dio/dio.dart';
 import 'package:pharma_connect_flutter/domain/entities/auth/user.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
 class AuthApi {
-  final ApiClient _client;
-  static const String _baseUrl =
-      'https://pharma-connect-backend-8cay.onrender.com/api/v1';
+  final Dio dio;
+  static const String _baseUrl = 'http://10.4.113.71:5000/api/v1';
 
-  AuthApi(this._client);
+  AuthApi(this.dio);
+
+  void setAuthToken(String token) {
+    dio.options.headers['Authorization'] = 'Bearer $token';
+  }
+
+  void clearAuthToken() {
+    dio.options.headers.remove('Authorization');
+  }
 
   Future<User> login(String email, String password) async {
     try {
-      final response = await _client.dio.post(
+      final response = await dio.post(
         '$_baseUrl/users/signIn',
         data: {
           'email': email,
@@ -28,7 +34,7 @@ class AuthApi {
         String? token;
         if (authHeader != null && authHeader.startsWith('Bearer ')) {
           token = authHeader.substring(7); // Remove 'Bearer ' prefix
-          _client.setAuthToken(token);
+          setAuthToken(token);
         }
 
         // Create a basic user from login response
@@ -57,7 +63,7 @@ class AuthApi {
 
   Future<User> register(String email, String password, String name) async {
     try {
-      final response = await _client.dio.post(
+      final response = await dio.post(
         '$_baseUrl/users/signUp',
         data: {
           'email': email,
@@ -72,7 +78,7 @@ class AuthApi {
         String? token;
         if (authHeader != null && authHeader.startsWith('Bearer ')) {
           token = authHeader.substring(7); // Remove 'Bearer ' prefix
-          _client.setAuthToken(token);
+          setAuthToken(token);
         }
 
         final user = User(
@@ -94,12 +100,12 @@ class AuthApi {
   }
 
   Future<void> logout() async {
-    _client.clearAuthToken();
+    clearAuthToken();
   }
 
   Future<User> getCurrentUser() async {
     try {
-      final response = await _client.dio.get('$_baseUrl/users/profile');
+      final response = await dio.get('$_baseUrl/users/profile');
 
       if (response.data['success'] == true) {
         final userData = response.data['data'];
@@ -123,7 +129,7 @@ class AuthApi {
 
   Future<void> updateProfile(User user) async {
     try {
-      final response = await _client.dio.put(
+      final response = await dio.put(
         '$_baseUrl/users/profile',
         data: {
           'name': user.name,
@@ -144,7 +150,7 @@ class AuthApi {
   Future<void> changePassword(
       String currentPassword, String newPassword) async {
     try {
-      final response = await _client.dio.put(
+      final response = await dio.put(
         '$_baseUrl/users/password',
         data: {
           'currentPassword': currentPassword,
@@ -164,7 +170,7 @@ class AuthApi {
 
   void _handleError(DioException e) {
     if (e.response?.statusCode == 401) {
-      _client.clearAuthToken();
+      clearAuthToken();
     }
     throw Exception(e.response?.data['message'] ?? e.message);
   }

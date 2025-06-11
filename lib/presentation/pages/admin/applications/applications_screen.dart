@@ -2,87 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:pharma_connect_flutter/infrastructure/repositories/application_repository_impl.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/application_api.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/application_notifier.dart';
 
-class Application {
-  final String id;
-  final String name;
-  final String owner;
-  final String contact;
-  final String email;
-  final String status;
-
-  Application({
-    required this.id,
-    required this.name,
-    required this.owner,
-    required this.contact,
-    required this.email,
-    required this.status,
-  });
-
-  factory Application.fromJson(Map<String, dynamic> json) {
-    return Application(
-      id: json['_id'] as String,
-      name: json['pharmacyName'] as String,
-      owner: json['ownerName'] as String,
-      contact: json['contactNumber'] as String,
-      email: json['email'] as String,
-      status: json['status'] as String,
-    );
-  }
-}
-
-class AdminApplicationsScreen extends StatefulWidget {
+class AdminApplicationsScreen extends ConsumerStatefulWidget {
   const AdminApplicationsScreen({Key? key}) : super(key: key);
 
   @override
-  State<AdminApplicationsScreen> createState() =>
+  ConsumerState<AdminApplicationsScreen> createState() =>
       _AdminApplicationsScreenState();
 }
 
-class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
+class _AdminApplicationsScreenState
+    extends ConsumerState<AdminApplicationsScreen> {
   int? _selectedIndex;
-  List<Application> applications = [];
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchApplications();
-  }
-
-  Future<void> fetchApplications() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5000/api/v1'));
-      final response = await dio.get('/applications');
-      final data = response.data['applications'] as List;
-      setState(() {
-        applications = data.map((json) => Application.fromJson(json)).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load applications';
-        _isLoading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final applicationState = ref.watch(applicationProvider);
+    final notifier = ref.read(applicationProvider.notifier);
+    List<Application> applications = [];
+    bool isLoading = false;
+    String? error;
+    applicationState.when(
+      loading: () {
+        isLoading = true;
+      },
+      error: (err, _) {
+        error = err.toString();
+      },
+      data: (apps) {
+        applications = apps;
+      },
+    );
     return Scaffold(
       appBar: AppBar(
         title: const Text('Review Applications'),
       ),
-      body: _isLoading
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text(_error!))
+          : error != null
+              ? Center(child: Text(error!))
               : Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8.0, vertical: 16.0),
@@ -117,59 +77,33 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
                                     fontWeight: FontWeight.bold, fontSize: 22),
                               ),
                               const SizedBox(height: 8),
-                              Text('Owner: ${app.owner}',
+                              Text('Owner: \\${app.owner}',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w500)),
-                              Text('Contact: ${app.contact}',
+                              Text('Contact: \\${app.contact}',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w500)),
-                              Text('Email: ${app.email}',
+                              Text('Email: \\${app.email}',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w500)),
-                              Text('Status: ${app.status}',
+                              Text('Status: \\${app.status}',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w500)),
                               if (isSelected && app.status == 'Pending') ...[
-                                const SizedBox(height: 16),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     OutlinedButton.icon(
                                       onPressed: () async {
-                                        final dio = Dio(BaseOptions(
-                                            baseUrl:
-                                                'http://localhost:5000/api/v1'));
-                                        final repo = ApplicationRepositoryImpl(
-                                            ApplicationApi(client: dio));
-                                        final result = await repo
+                                        await notifier
                                             .rejectApplication(app.id);
-                                        result.fold(
-                                          (failure) =>
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                            SnackBar(
-                                                content: Text(failure.message)),
-                                          ),
-                                          (_) {
-                                            setState(() {
-                                              applications[index] = Application(
-                                                id: app.id,
-                                                name: app.name,
-                                                owner: app.owner,
-                                                contact: app.contact,
-                                                email: app.email,
-                                                status: 'Rejected',
-                                              );
-                                              _selectedIndex = null;
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                  content: Text(
-                                                      'Application rejected.')),
-                                            );
-                                          },
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                              content: Text(
+                                                  'Application rejected.')),
                                         );
+                                        setState(() => _selectedIndex = null);
                                       },
                                       icon: const Icon(Icons.close,
                                           color: Colors.red),
@@ -183,40 +117,15 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
                                     const SizedBox(width: 16),
                                     ElevatedButton.icon(
                                       onPressed: () async {
-                                        final dio = Dio(BaseOptions(
-                                            baseUrl:
-                                                'http://localhost:5000/api/v1'));
-                                        final repo = ApplicationRepositoryImpl(
-                                            ApplicationApi(client: dio));
-                                        final result = await repo
+                                        await notifier
                                             .approveApplication(app.id);
-                                        result.fold(
-                                          (failure) =>
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                            SnackBar(
-                                                content: Text(failure.message)),
-                                          ),
-                                          (_) {
-                                            setState(() {
-                                              applications[index] = Application(
-                                                id: app.id,
-                                                name: app.name,
-                                                owner: app.owner,
-                                                contact: app.contact,
-                                                email: app.email,
-                                                status: 'Approved',
-                                              );
-                                              _selectedIndex = null;
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                  content: Text(
-                                                      'Application approved!')),
-                                            );
-                                          },
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                              content: Text(
+                                                  'Application approved!')),
                                         );
+                                        setState(() => _selectedIndex = null);
                                       },
                                       icon: const Icon(Icons.check,
                                           color: Colors.white),

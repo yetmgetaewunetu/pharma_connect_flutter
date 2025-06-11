@@ -3,6 +3,8 @@ import 'package:pharma_connect_flutter/core/errors/failures.dart';
 import 'package:pharma_connect_flutter/domain/entities/auth/user.dart';
 import 'package:pharma_connect_flutter/domain/repositories/auth_repository.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/auth_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthApi api;
@@ -20,7 +22,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, User>> register(String email, String password, String name) async {
+  Future<Either<Failure, User>> register(
+      String email, String password, String name) async {
     try {
       final user = await api.register(email, password, name);
       return Right(user);
@@ -60,7 +63,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, Unit>> changePassword(String currentPassword, String newPassword) async {
+  Future<Either<Failure, Unit>> changePassword(
+      String currentPassword, String newPassword) async {
     try {
       await api.changePassword(currentPassword, newPassword);
       return const Right(unit);
@@ -69,3 +73,8 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 }
+
+final authRepositoryProvider = Provider<AuthRepositoryImpl>((ref) {
+  final api = ref.watch(authApiProvider);
+  return AuthRepositoryImpl(api);
+});

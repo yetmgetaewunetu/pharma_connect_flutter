@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SessionManager {
   static const String _pharmacyIdKey = 'pharmacy_id';
@@ -45,3 +46,11 @@ class SessionManager {
     await _prefs.remove(_tokenKey);
   }
 }
+
+final sharedPreferencesProvider =
+    Provider<SharedPreferences>((ref) => throw UnimplementedError());
+
+final sessionManagerProvider = Provider<SessionManager>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return SessionManager(prefs);
+});

@@ -1,15 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:pharma_connect_flutter/domain/entities/order/order.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
 class OrderApi {
-  final ApiClient _client;
+  final Dio dio;
 
-  OrderApi(this._client);
+  OrderApi(this.dio);
 
   Future<List<Order>> getOrders() async {
     try {
-      final response = await _client.dio.get('/orders');
+      final response = await dio.get('/orders');
       return (response.data as List)
           .map((json) => Order.fromJson(json))
           .toList();
@@ -20,7 +19,7 @@ class OrderApi {
 
   Future<Order> getOrderById(String id) async {
     try {
-      final response = await _client.dio.get('/orders/$id');
+      final response = await dio.get('/orders/$id');
       return Order.fromJson(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
@@ -29,7 +28,7 @@ class OrderApi {
 
   Future<Order> createOrder(Order order) async {
     try {
-      final response = await _client.dio.post(
+      final response = await dio.post(
         '/orders',
         data: order.toJson(),
       );
@@ -41,7 +40,7 @@ class OrderApi {
 
   Future<Order> updateOrder(Order order) async {
     try {
-      final response = await _client.dio.put(
+      final response = await dio.put(
         '/orders/${order.id}',
         data: order.toJson(),
       );
@@ -53,7 +52,7 @@ class OrderApi {
 
   Future<void> deleteOrder(String id) async {
     try {
-      await _client.dio.delete('/orders/$id');
+      await dio.delete('/orders/$id');
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -64,11 +63,11 @@ class OrderApi {
       return Exception('Order not found');
     }
     if (e.response?.statusCode == 400) {
-      return Exception('Invalid request: ${e.response?.data['message']}');
+      return Exception('Invalid request: \\${e.response?.data['message']}');
     }
     if (e.response?.statusCode == 401) {
       return Exception('Unauthorized: Please login again');
     }
-    return Exception('Failed to perform operation: ${e.message}');
+    return Exception('Failed to perform operation: \\${e.message}');
   }
-} 
+}

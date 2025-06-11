@@ -2,7 +2,7 @@ name: pharma_connect_flutter
 description: A Flutter application for Pharma Connect.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   provider: ^6.0.5
   get_it: ^7.6.4
-  dio: ^5.3.3
+  dio: ^5.0.0
   shared_preferences: ^2.2.2
   json_annotation: ^4.9.0
   flutter_secure_storage: ^9.0.0
@@ -48,6 +48,7 @@ dependencies:
   google_maps_flutter: ^2.5.0
   image_picker: ^1.0.4
   intl: ^0.18.1
+  flutter_riverpod: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -68,16 +69,15 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/images/
-    - assets/icons/
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

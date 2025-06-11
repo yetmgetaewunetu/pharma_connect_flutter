@@ -1,55 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_connect_flutter/domain/entities/pharmacy/pharmacy.dart';
-import 'package:pharma_connect_flutter/domain/repositories/pharmacy_repository.dart';
+import 'package:pharma_connect_flutter/application/notifiers/pharmacy_notifier.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/remote/pharmacy_api.dart';
-import 'package:pharma_connect_flutter/infrastructure/repositories/pharmacy_repository_impl.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/edit_pharmacy_screen.dart';
+import 'package:collection/collection.dart';
 
-class MyPharmacyPage extends StatefulWidget {
+class MyPharmacyPage extends ConsumerStatefulWidget {
   const MyPharmacyPage({Key? key}) : super(key: key);
 
   @override
-  State<MyPharmacyPage> createState() => _MyPharmacyPageState();
+  ConsumerState<MyPharmacyPage> createState() => _MyPharmacyPageState();
 }
 
-class _MyPharmacyPageState extends State<MyPharmacyPage> {
-  late final PharmacyRepository _pharmacyRepository;
-  late final SessionManager _sessionManager;
+class _MyPharmacyPageState extends ConsumerState<MyPharmacyPage> {
   Pharmacy? _pharmacy;
   bool _isLoading = true;
   String? _error;
+  late SessionManager _sessionManager;
 
   @override
   void initState() {
     super.initState();
-    _initializeDependencies();
+    _initializeSession();
   }
 
-  Future<void> _initializeDependencies() async {
+  Future<void> _initializeSession() async {
     final prefs = await SharedPreferences.getInstance();
     _sessionManager = SessionManager(prefs);
-    _pharmacyRepository = PharmacyRepositoryImpl(
-      pharmacyApi: PharmacyApi(client: http.Client()),
-    );
     _loadPharmacy();
   }
 
   Future<void> _loadPharmacy() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final pharmacyId = _sessionManager.getPharmacyId();
-      print('Loaded pharmacyId from session: $pharmacyId');
-      if (pharmacyId == null) {
+      String? pharmacyId = _sessionManager.getPharmacyId();
+      final userId = _sessionManager.getUserId();
+      print('Session pharmacyId: $pharmacyId');
+      print('Session userId: $userId');
+      final notifier = ref.read(pharmacyProvider.notifier);
+      final pharmacies = await notifier.repository.getPharmacies();
+      print('Fetched pharmacies: \\n' + pharmacies.map((p) => p.id).join(', '));
+      Pharmacy? pharmacy;
+      if (pharmacyId != null) {
+        pharmacy = pharmacies.firstWhereOrNull((p) => p.id == pharmacyId);
+        print('Pharmacy found by pharmacyId: $pharmacy');
+      }
+      if (pharmacy == null && userId != null) {
+        pharmacy = pharmacies.firstWhereOrNull((p) => p.ownerId == userId);
+        print('Pharmacy found by ownerId: $pharmacy');
+        if (pharmacy != null) {
+          await _sessionManager.savePharmacyId(pharmacy.id);
+        }
+      }
+      if (pharmacy == null) {
         setState(() {
-          _error = 'No pharmacy ID found. Please register your pharmacy.';
+          _error = 'No pharmacy found for this owner.';
           _isLoading = false;
         });
         return;
       }
-
-      final pharmacy = await _pharmacyRepository.getPharmacy(pharmacyId);
       setState(() {
         _pharmacy = pharmacy;
         _isLoading = false;
@@ -57,7 +71,7 @@ class _MyPharmacyPageState extends State<MyPharmacyPage> {
     } catch (e) {
       String errorMsg = e.toString();
       if (errorMsg.contains('404')) {
-        errorMsg = 'Pharmacy not found. Please register your pharmacy.';
+        errorMsg = 'Pharmacy not found.';
       }
       setState(() {
         _error = errorMsg;
@@ -233,12 +247,9 @@ class _MyPharmacyPageState extends State<MyPharmacyPage> {
   }
 
   Widget _buildInfoCard(
-      BuildContext context, String title, List<Widget> details) {
+      BuildContext context, String title, List<Widget> children) {
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -246,14 +257,13 @@ class _MyPharmacyPageState extends State<MyPharmacyPage> {
           children: [
             Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
               ),
             ),
-            const SizedBox(height: 16),
-            ...details,
+            const SizedBox(height: 8),
+            ...children,
           ],
         ),
       ),
@@ -262,28 +272,16 @@ class _MyPharmacyPageState extends State<MyPharmacyPage> {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(value)),
         ],
       ),
     );

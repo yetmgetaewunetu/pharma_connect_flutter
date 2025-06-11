@@ -1,6 +1,8 @@
 import 'package:pharma_connect_flutter/domain/entities/inventory/inventory_item.dart';
 import 'package:pharma_connect_flutter/domain/repositories/inventory_repository.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/inventory_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
 class InventoryRepositoryImpl implements InventoryRepository {
   final InventoryApi inventoryApi;
@@ -37,3 +39,8 @@ class InventoryRepositoryImpl implements InventoryRepository {
     await inventoryApi.deleteInventoryItem(pharmacyId, inventoryId);
   }
 }
+
+final inventoryRepositoryProvider = Provider<InventoryRepositoryImpl>((ref) {
+  final api = ref.watch(inventoryApiProvider);
+  return InventoryRepositoryImpl(inventoryApi: api);
+});

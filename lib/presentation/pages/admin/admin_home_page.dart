@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pharma_connect_flutter/presentation/pages/admin/medicines/medicines_screen.dart';
 import 'package:pharma_connect_flutter/presentation/pages/admin/pharmacies/pharmacies_screen.dart';
 import 'package:pharma_connect_flutter/presentation/pages/admin/add_medicine_screen.dart';
-// import 'package:pharma_connect_flutter/presentation/pages/admin/add_medicine_screen.dart';
-import 'package:get_it/get_it.dart';
-import 'package:pharma_connect_flutter/application/blocs/admin/medicine/medicine_cubit.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pharma_connect_flutter/presentation/pages/admin/applications/applications_screen.dart';
-import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({Key? key}) : super(key: key);
@@ -33,20 +28,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   void _onItemTapped(int index) {
-    // Always refresh medicines when Medicines tab is tapped
-    if (index == 1) {
-      // Medicines tab index
-      final contextToUse = context;
-      // Use addPostFrameCallback to avoid setState during build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        contextToUse.read<MedicineCubit>().fetchMedicines();
-      });
-    }
-    if (index != _selectedIndex) {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
@@ -58,25 +42,15 @@ class _AdminHomePageState extends State<AdminHomePage> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              context.read<AuthBloc>().add(const AuthEvent.logout());
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/login', (route) => false);
             },
           ),
         ],
       ),
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          state.maybeWhen(
-            unauthenticated: () {
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/login', (route) => false);
-            },
-            orElse: () {},
-          );
-        },
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: _pages,
-        ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,

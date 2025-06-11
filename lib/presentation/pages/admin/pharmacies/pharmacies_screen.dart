@@ -1,40 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/admin/pharmacy/pharmacy_cubit.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/pharmacy_notifier.dart';
 import 'package:pharma_connect_flutter/domain/entities/pharmacy/pharmacy.dart';
 
-class AdminPharmaciesScreen extends StatefulWidget {
+class AdminPharmaciesScreen extends ConsumerStatefulWidget {
   const AdminPharmaciesScreen({Key? key}) : super(key: key);
 
   @override
-  State<AdminPharmaciesScreen> createState() => _AdminPharmaciesScreenState();
+  ConsumerState<AdminPharmaciesScreen> createState() =>
+      _AdminPharmaciesScreenState();
 }
 
-class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
+class _AdminPharmaciesScreenState extends ConsumerState<AdminPharmaciesScreen> {
   String _search = '';
   final _searchController = TextEditingController();
-  late final PharmacyCubit _pharmacyCubit;
-
-  @override
-  void initState() {
-    super.initState();
-    _pharmacyCubit = context.read<PharmacyCubit>();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPharmacies());
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _loadPharmacies() {
-    _pharmacyCubit.fetchPharmacies();
-  }
 
   List<Pharmacy> _filterPharmacies(List<Pharmacy> pharmacies) {
     if (_search.isEmpty) return pharmacies;
-
     final query = _search.toLowerCase();
     return pharmacies.where((pharmacy) {
       return pharmacy.name.toLowerCase().contains(query) ||
@@ -44,14 +26,22 @@ class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pharmacyState = ref.watch(pharmacyProvider);
+    final notifier = ref.read(pharmacyProvider.notifier);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pharmacies Management'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadPharmacies,
+            onPressed: () => notifier.loadPharmacies(),
           ),
         ],
       ),
@@ -81,31 +71,15 @@ class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
             ),
           ),
           Expanded(
-            child: BlocConsumer<PharmacyCubit, PharmacyState>(
-              listener: (context, state) {
-                if (state is PharmacyError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
-                  );
+            child: pharmacyState.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(child: Text(err.toString())),
+              data: (pharmacies) {
+                final filteredPharmacies = _filterPharmacies(pharmacies);
+                if (filteredPharmacies.isEmpty) {
+                  return _buildEmptyState();
                 }
-              },
-              builder: (context, state) {
-                if (state is PharmacyLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (state is PharmacyLoaded) {
-                  final filteredPharmacies =
-                      _filterPharmacies(state.pharmacies);
-
-                  if (filteredPharmacies.isEmpty) {
-                    return _buildEmptyState();
-                  }
-
-                  return _buildPharmacyList(filteredPharmacies);
-                }
-
-                return _buildInitialState();
+                return _buildPharmacyList(filteredPharmacies, notifier);
               },
             ),
           ),
@@ -139,9 +113,10 @@ class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
     );
   }
 
-  Widget _buildPharmacyList(List<Pharmacy> pharmacies) {
+  Widget _buildPharmacyList(
+      List<Pharmacy> pharmacies, PharmacyNotifier notifier) {
     return RefreshIndicator(
-      onRefresh: () async => _loadPharmacies(),
+      onRefresh: () async => notifier.loadPharmacies(),
       child: ListView.builder(
         itemCount: pharmacies.length,
         itemBuilder: (context, index) {
@@ -161,7 +136,8 @@ class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
                 ],
               ),
               trailing: PopupMenuButton<String>(
-                onSelected: (value) => _handlePopupSelection(value, pharmacy),
+                onSelected: (value) =>
+                    _handlePopupSelection(context, notifier, value, pharmacy),
                 itemBuilder: (context) => const [
                   PopupMenuItem(
                     value: 'delete',
@@ -176,29 +152,15 @@ class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
     );
   }
 
-  Widget _buildInitialState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.local_pharmacy, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'No pharmacies data available',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handlePopupSelection(String value, Pharmacy pharmacy) {
+  void _handlePopupSelection(BuildContext context, PharmacyNotifier notifier,
+      String value, Pharmacy pharmacy) {
     if (value == 'delete') {
-      _showDeleteConfirmation(pharmacy);
+      _showDeleteConfirmation(context, notifier, pharmacy);
     }
   }
 
-  void _showDeleteConfirmation(Pharmacy pharmacy) {
+  void _showDeleteConfirmation(
+      BuildContext context, PharmacyNotifier notifier, Pharmacy pharmacy) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -210,9 +172,12 @@ class _AdminPharmaciesScreenState extends State<AdminPharmaciesScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _pharmacyCubit.deletePharmacy(pharmacy.id);
+              await notifier.deletePharmacy(pharmacy.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Pharmacy deleted successfully!')),
+              );
             },
             child: const Text(
               'Delete',

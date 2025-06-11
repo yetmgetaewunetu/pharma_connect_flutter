@@ -1,42 +1,64 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/auth_notifier.dart';
+import 'package:pharma_connect_flutter/domain/entities/auth/user.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/loading_indicator.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/error_dialog.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends ConsumerWidget {
   const RegisterPage({Key? key}) : super(key: key);
 
+  void _handleRegister(BuildContext context, User user) {
+    Navigator.pushReplacementNamed(context, '/home');
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final notifier = ref.read(authProvider.notifier);
+    ref.listen<AsyncValue<User?>>(authProvider, (prev, next) {
+      next.whenOrNull(
+        data: (user) {
+          if (user != null) {
+            _handleRegister(context, user);
+          }
+        },
+        error: (err, _) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error'),
+              content: Text(err.toString()),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    });
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register'),
       ),
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          state.maybeWhen(
-            authenticated: (_) => Navigator.pushReplacementNamed(context, '/home'),
-            error: (message) => showDialog(
-              context: context,
-              builder: (context) => ErrorDialog(message: message),
-            ),
-            orElse: () {},
-          );
-        },
-        builder: (context, state) {
-          return state.maybeWhen(
-            loading: () => const Center(child: LoadingIndicator()),
-            orElse: () => const RegisterForm(),
-          );
-        },
+      body: authState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        data: (_) => RegisterForm(notifier: notifier),
+        error: (err, _) =>
+            RegisterForm(notifier: notifier, error: err.toString()),
       ),
     );
   }
 }
 
 class RegisterForm extends StatefulWidget {
-  const RegisterForm({Key? key}) : super(key: key);
+  final AuthNotifier notifier;
+  final String? error;
+  const RegisterForm({Key? key, required this.notifier, this.error})
+      : super(key: key);
 
   @override
   State<RegisterForm> createState() => _RegisterFormState();
@@ -60,13 +82,11 @@ class _RegisterFormState extends State<RegisterForm> {
 
   void _onSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthBloc>().add(
-            AuthEvent.register(
-              _emailController.text,
-              _passwordController.text,
-              _nameController.text,
-            ),
-          );
+      widget.notifier.register(
+        _emailController.text,
+        _passwordController.text,
+        _nameController.text,
+      );
     }
   }
 
@@ -88,6 +108,12 @@ class _RegisterFormState extends State<RegisterForm> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
+            if (widget.error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(widget.error!,
+                    style: const TextStyle(color: Colors.red)),
+              ),
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -142,13 +168,10 @@ class _RegisterFormState extends State<RegisterForm> {
               controller: _confirmPasswordController,
               decoration: const InputDecoration(
                 labelText: 'Confirm Password',
-                prefixIcon: Icon(Icons.lock_outline),
+                prefixIcon: Icon(Icons.lock),
               ),
               obscureText: true,
               validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Please confirm your password';
-                }
                 if (value != _passwordController.text) {
                   return 'Passwords do not match';
                 }
@@ -160,16 +183,9 @@ class _RegisterFormState extends State<RegisterForm> {
               onPressed: _onSubmit,
               child: const Text('Register'),
             ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Already have an account? Login'),
-            ),
           ],
         ),
       ),
     );
   }
-} 
+}

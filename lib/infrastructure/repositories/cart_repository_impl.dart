@@ -3,6 +3,8 @@ import 'package:pharma_connect_flutter/core/errors/failures.dart';
 import 'package:pharma_connect_flutter/domain/entities/cart/cart_item.dart';
 import 'package:pharma_connect_flutter/domain/repositories/cart_repository.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/cart_api.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
 
 class CartRepositoryImpl implements CartRepository {
   final CartApi api;
@@ -66,3 +68,8 @@ class CartRepositoryImpl implements CartRepository {
     return Left(ServerFailure('Checkout not supported'));
   }
 }
+
+final cartRepositoryProvider = Provider<CartRepositoryImpl>((ref) {
+  final api = ref.watch(cartApiProvider);
+  return CartRepositoryImpl(api);
+});

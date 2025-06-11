@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:pharma_connect_flutter/presentation/pages/user/cart_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/user/join_us_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/user/search_page.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/cart/cart_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class UserHomePage extends StatefulWidget {
+class UserHomePage extends ConsumerStatefulWidget {
   const UserHomePage({Key? key}) : super(key: key);
 
   @override
-  State<UserHomePage> createState() => _UserHomePageState();
+  ConsumerState<UserHomePage> createState() => _UserHomePageState();
 }
 
-class _UserHomePageState extends State<UserHomePage> {
+class _UserHomePageState extends ConsumerState<UserHomePage> {
   int _selectedIndex = 0;
 
   late final List<Widget> _pages;
@@ -21,7 +20,7 @@ class _UserHomePageState extends State<UserHomePage> {
   void initState() {
     super.initState();
     _pages = <Widget>[
-      // User Home Page Content
+      // Home Page Content
       SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -54,17 +53,16 @@ class _UserHomePageState extends State<UserHomePage> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            // TODO: Implement Nearby pharmacies list based on image 1
             SizedBox(
-              height: 150, // Adjust height as needed
+              height: 150,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: 2, // Placeholder count
+                itemCount: 2,
                 itemBuilder: (context, index) {
                   return Card(
                     margin: const EdgeInsets.only(right: 16),
                     child: Container(
-                      width: 150, // Adjust width as needed
+                      width: 150,
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,8 +80,8 @@ class _UserHomePageState extends State<UserHomePage> {
                             ],
                           ),
                           SizedBox(height: 8),
-                          Text('gssh'), // Placeholder
-                          Text('2.8 km'), // Placeholder
+                          Text('gssh'),
+                          Text('2.8 km'),
                         ],
                       ),
                     ),
@@ -97,20 +95,19 @@ class _UserHomePageState extends State<UserHomePage> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            // TODO: Implement Most Searched Medicines list based on image 1
             SizedBox(
-              height: 60, // Adjust height as needed
+              height: 60,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: 3, // Placeholder count
+                itemCount: 3,
                 itemBuilder: (context, index) {
                   return Card(
                     margin: const EdgeInsets.only(right: 16),
                     child: Container(
-                      width: 150, // Increased width to allow more text
+                      width: 150,
                       padding: const EdgeInsets.all(16),
                       alignment: Alignment.center,
-                      child: Text('Paracetamol'), // Removed overflow handling
+                      child: Text('Paracetamol'),
                     ),
                   );
                 },
@@ -119,11 +116,11 @@ class _UserHomePageState extends State<UserHomePage> {
           ],
         ),
       ),
-      // Search Page Content (will be built in SearchPage file)
+      // Search Page Content
       const SearchPage(),
-      // Cart Page Content (will be built in CartPage file)
+      // Cart Page Content
       const CartPage(),
-      // Join Us page content (will be built in JoinUsPage file)
+      // Join Us page content
       const JoinUsPage(),
     ];
   }
@@ -132,10 +129,6 @@ class _UserHomePageState extends State<UserHomePage> {
     setState(() {
       _selectedIndex = index;
     });
-    if (index == 2) {
-      BlocProvider.of<CartBloc>(context, listen: false)
-          .add(const CartEvent.loadCart());
-    }
   }
 
   @override
@@ -145,9 +138,9 @@ class _UserHomePageState extends State<UserHomePage> {
         title: const Text('Pharma Connect'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person), // User profile icon
+            icon: const Icon(Icons.person),
             onPressed: () {
-              // TODO: Navigate to User Profile page
+              Navigator.pushNamed(context, '/profile');
             },
           ),
         ],

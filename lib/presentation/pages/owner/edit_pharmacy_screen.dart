@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_connect_flutter/domain/entities/pharmacy/pharmacy.dart';
+import 'package:pharma_connect_flutter/application/notifiers/pharmacy_notifier.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/remote/pharmacy_api.dart';
-import 'package:pharma_connect_flutter/infrastructure/repositories/pharmacy_repository_impl.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-class EditPharmacyScreen extends StatefulWidget {
+class EditPharmacyScreen extends ConsumerStatefulWidget {
   final Pharmacy pharmacy;
   const EditPharmacyScreen({Key? key, required this.pharmacy})
       : super(key: key);
 
   @override
-  State<EditPharmacyScreen> createState() => _EditPharmacyScreenState();
+  ConsumerState<EditPharmacyScreen> createState() => _EditPharmacyScreenState();
 }
 
-class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
+class _EditPharmacyScreenState extends ConsumerState<EditPharmacyScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _ownerNameController;
@@ -30,7 +29,6 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   late TextEditingController _longitudeController;
   bool _isLoading = false;
   String? _error;
-  late PharmacyRepositoryImpl _pharmacyRepository;
 
   @override
   void initState() {
@@ -51,17 +49,6 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
         TextEditingController(text: widget.pharmacy.latitude.toString());
     _longitudeController =
         TextEditingController(text: widget.pharmacy.longitude.toString());
-    _initRepo();
-  }
-
-  Future<void> _initRepo() async {
-    final prefs = await SharedPreferences.getInstance();
-    final sessionManager = SessionManager(prefs);
-    setState(() {
-      _pharmacyRepository = PharmacyRepositoryImpl(
-        pharmacyApi: PharmacyApi(client: http.Client()),
-      );
-    });
   }
 
   @override
@@ -100,7 +87,22 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
         'latitude': double.tryParse(_latitudeController.text) ?? 0.0,
         'longitude': double.tryParse(_longitudeController.text) ?? 0.0,
       };
-      await _pharmacyRepository.updatePharmacy(widget.pharmacy.id, data);
+      final notifier = ref.read(pharmacyProvider.notifier);
+      await notifier.updatePharmacy(
+          widget.pharmacy.id,
+          widget.pharmacy.copyWith(
+            name: _nameController.text,
+            ownerName: _ownerNameController.text,
+            licenseNumber: _licenseNumberController.text,
+            email: _emailController.text,
+            contactNumber: _contactNumberController.text,
+            address: _addressController.text,
+            city: _cityController.text,
+            state: _stateController.text,
+            zipCode: _zipCodeController.text,
+            latitude: double.tryParse(_latitudeController.text) ?? 0.0,
+            longitude: double.tryParse(_longitudeController.text) ?? 0.0,
+          ));
       if (mounted) {
         Navigator.of(context).pop(true);
       }
@@ -204,7 +206,6 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                       decoration: const InputDecoration(labelText: 'Latitude'),
                       validator: (v) =>
                           v == null || v.isEmpty ? 'Required' : null,
-                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -212,7 +213,6 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                       decoration: const InputDecoration(labelText: 'Longitude'),
                       validator: (v) =>
                           v == null || v.isEmpty ? 'Required' : null,
-                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(

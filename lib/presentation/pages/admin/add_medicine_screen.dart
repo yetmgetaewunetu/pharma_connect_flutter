@@ -1,65 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/medicine/add_medicine_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/medicine_notifier.dart';
 import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/loading_indicator.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/error_dialog.dart';
-import 'package:dio/dio.dart';
-import 'package:pharma_connect_flutter/infrastructure/repositories/medicine_repository_impl.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/remote/medicine_api.dart';
 
-class AddMedicineScreen extends StatelessWidget {
+class AddMedicineScreen extends ConsumerWidget {
   const AddMedicineScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5000/api/v1'));
-    return BlocProvider(
-      create: (context) => AddMedicineBloc(
-        MedicineRepositoryImpl(
-          MedicineApi(client: dio, baseUrl: '/medicines'),
-        ),
-      ),
-      child: BlocListener<AddMedicineBloc, AddMedicineState>(
-        listener: (context, state) {
-          state.when(
-            initial: () {},
-            loading: () {},
-            success: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Medicine added successfully!')),
-              );
-            },
-            error: (message) {
-              showDialog(
-                context: context,
-                builder: (context) => ErrorDialog(message: message),
-              );
-            },
-          );
-        },
-        child: Scaffold(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final medicineState = ref.watch(medicineProvider);
+    final notifier = ref.read(medicineProvider.notifier);
+    return Scaffold(
       appBar: AppBar(
         title: const Text('Add Medicine to Platform'),
       ),
-          body: BlocBuilder<AddMedicineBloc, AddMedicineState>(
-            builder: (context, state) {
-              return state.when(
-                initial: () => const AddMedicineForm(),
-                loading: () => const Center(child: LoadingIndicator()),
-                success: () => const AddMedicineForm(),
-                error: (message) => const AddMedicineForm(),
-              );
-            },
-          ),
-        ),
+      body: medicineState.when(
+        loading: () => const Center(child: LoadingIndicator()),
+        error: (err, _) => Center(child: Text(err.toString())),
+        data: (_) => AddMedicineForm(notifier: notifier),
       ),
     );
   }
 }
 
 class AddMedicineForm extends StatefulWidget {
-  const AddMedicineForm({Key? key}) : super(key: key);
+  final MedicineNotifier notifier;
+  const AddMedicineForm({Key? key, required this.notifier}) : super(key: key);
 
   @override
   State<AddMedicineForm> createState() => _AddMedicineFormState();
@@ -81,16 +49,20 @@ class _AddMedicineFormState extends State<AddMedicineForm> {
     super.dispose();
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
       final medicine = Medicine(
-          id: '', // Will be assigned by the server
-          name: _nameController.text,
-          description: _descriptionController.text,
-          category: _categoryController.text,
+        id: '', // Will be assigned by the server
+        name: _nameController.text,
+        description: _descriptionController.text,
+        category: _categoryController.text,
         image: _imageController.text,
       );
-      context.read<AddMedicineBloc>().add(AddMedicineEvent.submitted(medicine));
+      await widget.notifier.addMedicine(medicine);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Medicine added successfully!')),
+      );
+      _formKey.currentState?.reset();
     }
   }
 

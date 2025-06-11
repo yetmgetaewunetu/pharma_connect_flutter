@@ -6,18 +6,21 @@ import 'package:pharma_connect_flutter/infrastructure/repositories/inventory_rep
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/inventory_notifier.dart';
 
-class EditInventoryItemScreen extends StatefulWidget {
+class EditInventoryItemScreen extends ConsumerStatefulWidget {
   final InventoryItem item;
   const EditInventoryItemScreen({Key? key, required this.item})
       : super(key: key);
 
   @override
-  State<EditInventoryItemScreen> createState() =>
+  ConsumerState<EditInventoryItemScreen> createState() =>
       _EditInventoryItemScreenState();
 }
 
-class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
+class _EditInventoryItemScreenState
+    extends ConsumerState<EditInventoryItemScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _quantityController;
   late TextEditingController _priceController;
@@ -26,9 +29,6 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
   DateTime? _selectedExpiryDate;
   bool _isSubmitting = false;
   String? _error;
-  late SessionManager _sessionManager;
-  String? _pharmacyId;
-  String? _token;
 
   @override
   void initState() {
@@ -42,16 +42,6 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
     _categoryController =
         TextEditingController(text: widget.item.category ?? '');
     _selectedExpiryDate = widget.item.expiryDate;
-    _initializeSession();
-  }
-
-  Future<void> _initializeSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    _sessionManager = SessionManager(prefs);
-    setState(() {
-      _pharmacyId = _sessionManager.getPharmacyId();
-      _token = _sessionManager.getToken();
-    });
   }
 
   @override
@@ -79,10 +69,8 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
     }
   }
 
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate() ||
-        _pharmacyId == null ||
-        _token == null) {
+  Future<void> _submitForm(String pharmacyId, String userId) async {
+    if (!_formKey.currentState!.validate()) {
       setState(() {
         _error = 'Please fill all fields and make sure you are logged in.';
       });
@@ -93,13 +81,6 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
       _error = null;
     });
     try {
-      final repo = InventoryRepositoryImpl(
-        inventoryApi: InventoryApi(
-          client: http.Client(),
-          token: _token!,
-        ),
-      );
-      final userId = _sessionManager.getUserId();
       final data = {
         'quantity': int.parse(_quantityController.text),
         'price': double.parse(_priceController.text),
@@ -108,12 +89,11 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
         'updatedBy': userId,
         'medicineId': widget.item.medicineId,
         'medicineName': widget.item.medicineName,
-        'pharmacy': _pharmacyId,
+        'pharmacy': pharmacyId,
       };
-      print('Updating inventory item: ' + data.toString());
-      print(
-          'PharmacyId: [32m[1m[4m$_pharmacyId[0m, InventoryId: [32m[1m[4m${widget.item.id}[0m');
-      await repo.updateInventoryItem(_pharmacyId!, widget.item.id, data);
+      await ref
+          .read(inventoryProvider(pharmacyId).notifier)
+          .updateInventoryItem(widget.item.id, data);
       if (mounted) {
         setState(() {
           _isSubmitting = false;
@@ -124,19 +104,22 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        final errorMsg = e.toString();
-        if (errorMsg
-            .contains("type 'Null' is not a subtype of type 'String'")) {
-          _error = 'An unexpected error occurred. Please try again.';
-        } else {
-          _error = errorMsg;
-        }
+        _error = e.toString();
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final sessionManager = ref.watch(sessionManagerProvider);
+    final pharmacyId = sessionManager.getPharmacyId();
+    final userId = sessionManager.getUserId();
+    if (pharmacyId == null || userId == null) {
+      return const Scaffold(
+        body: Center(
+            child: Text('Please complete your pharmacy profile and login.')),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Inventory Item')),
       body: SingleChildScrollView(
@@ -183,8 +166,16 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
                 decoration: const InputDecoration(labelText: 'Category'),
               ),
               const SizedBox(height: 24),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child:
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                ),
               ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitForm,
+                onPressed: _isSubmitting
+                    ? null
+                    : () => _submitForm(pharmacyId, userId),
                 child: _isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('Save Changes'),

@@ -2,40 +2,36 @@ import 'package:dio/dio.dart';
 import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
 
 class MedicineApi {
-  final Dio client;
+  final Dio dio;
   final String baseUrl;
 
-  MedicineApi({
-    required this.client,
-    this.baseUrl = '/medicines',
-  });
+  MedicineApi({required this.dio, this.baseUrl = '/medicines'});
 
   Future<Response> getMedicines() async {
-    return await client.get(baseUrl);
+    return await dio.get(baseUrl);
   }
 
   Future<Response> getMedicineById(String id) async {
-    return await client.get('$baseUrl/$id');
+    return await dio.get('$baseUrl/$id');
   }
 
   Future<Response> addMedicine(Medicine medicine) async {
-    return await client.post(baseUrl, data: medicine.toJson());
+    return await dio.post(baseUrl, data: medicine.toJson());
   }
 
   Future<Response> updateMedicine(Medicine medicine) async {
-    return await client.patch('$baseUrl/${medicine.id}',
-        data: medicine.toJson());
+    return await dio.patch('$baseUrl/${medicine.id}', data: medicine.toJson());
   }
 
   Future<Response> deleteMedicine(String id) async {
-    return await client.delete('$baseUrl/$id');
+    return await dio.delete('$baseUrl/$id');
   }
 
   Future<Response> searchMedicines(String query) async {
-    return await client.post('/search', data: {'medicineName': query});
+    return await dio.post('/search', data: {'medicineName': query});
   }
 
   Future<Response> getMedicinesByCategory(String category) async {
-    return await client.get('$baseUrl/category/$category');
+    return await dio.get('$baseUrl/category/$category');
   }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pharma_connect_flutter/application/notifiers/auth_notifier.dart';
+import 'package:pharma_connect_flutter/domain/entities/auth/user.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/loading_indicator.dart';
 import 'package:pharma_connect_flutter/presentation/widgets/error_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pharma_connect_flutter/presentation/pages/admin/admin_home_page.dart';
-import 'package:pharma_connect_flutter/application/blocs/admin/pharmacy/pharmacy_cubit.dart';
 import 'package:pharma_connect_flutter/infrastructure/repositories/pharmacy_repository.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/pharmacy_api.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
@@ -13,76 +13,62 @@ import 'package:pharma_connect_flutter/presentation/pages/user/user_home_page.da
 import 'package:pharma_connect_flutter/presentation/pages/owner/owner_home_page.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends ConsumerWidget {
   const LoginPage({Key? key}) : super(key: key);
 
-  Future<void> _handleAuth(BuildContext context, user) async {
-    final prefs = await SharedPreferences.getInstance();
-    final sessionManager = SessionManager(prefs);
-
-    await sessionManager.saveUserId(user.id);
-
-    // Only save token if it exists
-    if (user.token != null) {
-      await sessionManager.saveToken(user.token);
-    }
-
-    // Save pharmacy ID if it exists in the user data
-    if (user.pharmacyId != null) {
-      await sessionManager.savePharmacyId(user.pharmacyId);
-    }
-
+  void _handleAuth(BuildContext context, User user) {
     if (user.role.toLowerCase() == 'admin') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => BlocProvider(
-            create: (_) => PharmacyCubit(
-              PharmacyRepository(
-                PharmacyApi(ApiClient()),
-              ),
-            ),
-            child: const AdminHomePage(),
-          ),
-        ),
-      );
+      Navigator.pushReplacementNamed(context, '/admin');
     } else if (user.role.toLowerCase() == 'owner') {
       Navigator.pushReplacementNamed(context, '/owner');
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const UserHomePage()),
-      );
+      Navigator.pushReplacementNamed(context, '/user');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          state.maybeWhen(
-            authenticated: (user) => _handleAuth(context, user),
-            error: (message) => showDialog(
-              context: context,
-              builder: (context) => ErrorDialog(message: message),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final notifier = ref.read(authProvider.notifier);
+    ref.listen<AsyncValue<User?>>(authProvider, (prev, next) {
+      next.whenOrNull(
+        data: (user) {
+          if (user != null) {
+            _handleAuth(context, user);
+          }
+        },
+        error: (err, _) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error'),
+              content: Text(err.toString()),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
             ),
-            orElse: () {},
           );
         },
-        builder: (context, state) {
-          return state.maybeWhen(
-            loading: () => const Center(child: LoadingIndicator()),
-            orElse: () => const LoginForm(),
-          );
-        },
+      );
+    });
+    return Scaffold(
+      body: authState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        data: (_) => LoginForm(notifier: notifier),
+        error: (err, _) => LoginForm(notifier: notifier, error: err.toString()),
       ),
     );
   }
 }
 
 class LoginForm extends StatefulWidget {
-  const LoginForm({Key? key}) : super(key: key);
+  final AuthNotifier notifier;
+  final String? error;
+  const LoginForm({Key? key, required this.notifier, this.error})
+      : super(key: key);
 
   @override
   State<LoginForm> createState() => _LoginFormState();
@@ -102,12 +88,10 @@ class _LoginFormState extends State<LoginForm> {
 
   void _onSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthBloc>().add(
-            AuthEvent.login(
-              _emailController.text,
-              _passwordController.text,
-            ),
-          );
+      widget.notifier.login(
+        _emailController.text,
+        _passwordController.text,
+      );
     }
   }
 
@@ -131,6 +115,12 @@ class _LoginFormState extends State<LoginForm> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
+              if (widget.error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(widget.error!,
+                      style: const TextStyle(color: Colors.red)),
+                ),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(

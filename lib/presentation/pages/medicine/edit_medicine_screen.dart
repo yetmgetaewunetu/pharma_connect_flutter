@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_connect_flutter/domain/entities/medicine/medicine.dart';
-import 'package:pharma_connect_flutter/infrastructure/repositories/medicine_repository_impl.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/remote/medicine_api.dart';
-import 'package:dio/dio.dart';
+import 'package:pharma_connect_flutter/application/notifiers/medicine_notifier.dart';
 
-class EditMedicineScreen extends StatefulWidget {
+class EditMedicineScreen extends ConsumerStatefulWidget {
   const EditMedicineScreen({Key? key}) : super(key: key);
 
   @override
-  State<EditMedicineScreen> createState() => _EditMedicineScreenState();
+  ConsumerState<EditMedicineScreen> createState() => _EditMedicineScreenState();
 }
 
-class _EditMedicineScreenState extends State<EditMedicineScreen> {
+class _EditMedicineScreenState extends ConsumerState<EditMedicineScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
@@ -60,30 +58,12 @@ class _EditMedicineScreenState extends State<EditMedicineScreen> {
         category: _categoryController.text,
         image: _imageController.text,
       );
-      final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5000/api/v1'));
-      final repo = MedicineRepositoryImpl(
-          MedicineApi(client: dio, baseUrl: '/medicines'));
-      final result = await repo.updateMedicine(updatedMedicine);
-      result.fold(
-        (failure) => showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Error'),
-            content: Text(failure.message),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'))
-            ],
-          ),
-        ),
-        (_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Medicine updated successfully!')),
-          );
-          Navigator.of(context).pop(true);
-        },
+      final notifier = ref.read(medicineProvider.notifier);
+      await notifier.updateMedicine(updatedMedicine);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Medicine updated successfully!')),
       );
+      Navigator.of(context).pop(true);
     }
   }
 

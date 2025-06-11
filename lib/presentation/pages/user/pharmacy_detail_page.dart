@@ -1,44 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pharma_connect_flutter/domain/entities/pharmacy/pharmacy.dart';
-import 'package:pharma_connect_flutter/infrastructure/datasources/remote/pharmacy_api.dart';
-import 'package:pharma_connect_flutter/infrastructure/repositories/pharmacy_repository_impl.dart';
-import 'package:http/http.dart' as http;
+import 'package:pharma_connect_flutter/application/notifiers/pharmacy_notifier.dart';
+import 'package:collection/collection.dart';
 
-class PharmacyDetailPage extends StatelessWidget {
+class PharmacyDetailPage extends ConsumerWidget {
   final String pharmacyId;
   const PharmacyDetailPage({Key? key, required this.pharmacyId})
       : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final pharmacyRepository = PharmacyRepositoryImpl(
-      pharmacyApi: PharmacyApi(client: http.Client()),
-    );
-
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pharmacyState = ref.watch(pharmacyProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pharmacy Details'),
       ),
-      body: FutureBuilder<Pharmacy>(
-        future: pharmacyRepository.getPharmacy(pharmacyId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: \\${snapshot.error}'));
-          } else if (!snapshot.hasData) {
+      body: pharmacyState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text('Error: $err')),
+        data: (pharmacies) {
+          final pharmacy =
+              pharmacies.firstWhereOrNull((p) => p.id == pharmacyId);
+          if (pharmacy == null) {
             return const Center(child: Text('No data found.'));
           }
-          final pharmacy = snapshot.data!;
           return SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(pharmacy.name,
                     style: const TextStyle(
                         fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildDetailRow('Owner Name:', pharmacy.ownerName),
                 _buildDetailRow('License Number:', pharmacy.licenseNumber),
                 _buildDetailRow('Email:', pharmacy.email),
@@ -50,9 +45,9 @@ class PharmacyDetailPage extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     child: Image.network(pharmacy.pharmacyImage!),
+                  ),
+              ],
             ),
-          ],
-        ),
           );
         },
       ),
