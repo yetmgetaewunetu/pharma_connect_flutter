@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/api_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pharma_connect_flutter/infrastructure/datasources/local/session_manager.dart';
+import 'package:get_it/get_it.dart';
 
 class JoinUsPage extends StatefulWidget {
   const JoinUsPage({Key? key}) : super(key: key);
@@ -26,6 +30,39 @@ class _JoinUsPageState extends State<JoinUsPage> {
   bool _isLoading = false;
   String? _error;
   String? _success;
+  String? _ownerId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwnerId();
+  }
+
+  Future<void> _loadOwnerId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sessionManager = SessionManager(prefs);
+    setState(() {
+      _ownerId = sessionManager.getUserId();
+    });
+  }
+
+  double _parseLatitude(String link) {
+    final regex = RegExp(r"@(-?\d+\.\d+),(-?\d+\.\d+)");
+    final match = regex.firstMatch(link);
+    if (match != null) {
+      return double.tryParse(match.group(1) ?? '') ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  double _parseLongitude(String link) {
+    final regex = RegExp(r"@(-?\d+\.\d+),(-?\d+\.\d+)");
+    final match = regex.firstMatch(link);
+    if (match != null) {
+      return double.tryParse(match.group(2) ?? '') ?? 0.0;
+    }
+    return 0.0;
+  }
 
   @override
   void dispose() {
@@ -46,13 +83,24 @@ class _JoinUsPageState extends State<JoinUsPage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_ownerId == null ||
+        _ownerId!.isEmpty ||
+        _ownerId == 'demo-owner-id' ||
+        _ownerId!.length != 24) {
+      setState(() {
+        _error = 'Invalid or missing user ID. Please log in again.';
+      });
+      return;
+    }
     setState(() {
       _isLoading = true;
       _error = null;
       _success = null;
     });
     try {
-      final dio = Dio(BaseOptions(baseUrl: 'http://10.4.113.71:5000/api/v1'));
+      final dio = GetIt.I<ApiClient>().dio;
+      final latitude = _parseLatitude(_googleMapsLinkController.text.trim());
+      final longitude = _parseLongitude(_googleMapsLinkController.text.trim());
       final payload = {
         "ownerName": _ownerNameController.text.trim(),
         "pharmacyName": _pharmacyNameController.text.trim(),
@@ -62,13 +110,12 @@ class _JoinUsPageState extends State<JoinUsPage> {
         "city": _cityController.text.trim(),
         "state": _stateController.text.trim(),
         "zipCode": _zipCodeController.text.trim(),
-        "latitude": 0.0, // TODO: parse from Google Maps link if needed
-        "longitude": 0.0, // TODO: parse from Google Maps link if needed
+        "latitude": latitude,
+        "longitude": longitude,
         "licenseNumber": _licenseNumberController.text.trim(),
         "licenseImage": _licenseImageUrlController.text.trim(),
         "pharmacyImage": _pharmacyImageUrlController.text.trim(),
-        "ownerId":
-            "demo-owner-id", // TODO: replace with real ownerId if available
+        "ownerId": _ownerId,
         "googleMapsLink": _googleMapsLinkController.text.trim(),
       };
       final response =
