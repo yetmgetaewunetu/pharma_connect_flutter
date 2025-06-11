@@ -8,6 +8,7 @@ import 'package:pharma_connect_flutter/presentation/pages/auth/login_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/auth/register_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/home/home_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/medicine/edit_medicine_screen.dart';
+import 'package:pharma_connect_flutter/presentation/pages/owner/owner_home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,7 @@ class MyApp extends StatelessWidget {
           '/register': (context) => const RegisterPage(),
           '/home': (context) => const HomePage(),
           '/medicine/edit': (context) => const EditMedicineScreen(),
+          '/owner': (context) => const OwnerHomePage(),
         },
       ),
     );

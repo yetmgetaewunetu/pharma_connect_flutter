@@ -22,23 +22,34 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocConsumer<AuthBloc, AuthState>(
+      body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           state.maybeWhen(
-            error: (message) => showDialog(
-              context: context,
-              builder: (context) => ErrorDialog(message: message),
-            ),
+            unauthenticated: () {
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/login', (route) => false);
+            },
             orElse: () {},
           );
         },
-        builder: (context, state) {
-          return state.maybeWhen(
-            loading: () => const Center(child: LoadingIndicator()),
-            authenticated: (user) => ProfileContent(user: user),
-            orElse: () => const SizedBox.shrink(),
-          );
-        },
+        child: BlocConsumer<AuthBloc, AuthState>(
+          listener: (context, state) {
+            state.maybeWhen(
+              error: (message) => showDialog(
+                context: context,
+                builder: (context) => ErrorDialog(message: message),
+              ),
+              orElse: () {},
+            );
+          },
+          builder: (context, state) {
+            return state.maybeWhen(
+              loading: () => const Center(child: LoadingIndicator()),
+              authenticated: (user) => ProfileContent(user: user),
+              orElse: () => const SizedBox.shrink(),
+            );
+          },
+        ),
       ),
     );
   }
@@ -176,7 +187,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _confirmPasswordController,
-              decoration: const InputDecoration(labelText: 'Confirm New Password'),
+              decoration:
+                  const InputDecoration(labelText: 'Confirm New Password'),
               obscureText: true,
               validator: (value) {
                 if (value?.isEmpty ?? true) {
@@ -203,4 +215,4 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       ],
     );
   }
-} 
+}

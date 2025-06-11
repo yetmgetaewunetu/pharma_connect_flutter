@@ -94,13 +94,7 @@ class AuthApi {
   }
 
   Future<void> logout() async {
-    try {
-      await _client.dio.post('$_baseUrl/users/signOut');
-      _client.clearAuthToken();
-    } on DioException catch (e) {
-      _handleError(e);
-      rethrow;
-    }
+    _client.clearAuthToken();
   }
 
   Future<User> getCurrentUser() async {

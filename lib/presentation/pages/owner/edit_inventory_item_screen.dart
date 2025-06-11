@@ -99,26 +99,38 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
           token: _token!,
         ),
       );
+      final userId = _sessionManager.getUserId();
       final data = {
         'quantity': int.parse(_quantityController.text),
         'price': double.parse(_priceController.text),
         'expiryDate': _selectedExpiryDate!.toIso8601String(),
         'category': _categoryController.text,
+        'updatedBy': userId,
+        'medicineId': widget.item.medicineId,
+        'medicineName': widget.item.medicineName,
+        'pharmacy': _pharmacyId,
       };
+      print('Updating inventory item: ' + data.toString());
+      print(
+          'PharmacyId: [32m[1m[4m$_pharmacyId[0m, InventoryId: [32m[1m[4m${widget.item.id}[0m');
       await repo.updateInventoryItem(_pharmacyId!, widget.item.id, data);
-      setState(() {
-        _isSubmitting = false;
-      });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inventory item updated!')),
-        );
+        setState(() {
+          _isSubmitting = false;
+          _error = null;
+        });
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        _error = e.toString();
+        final errorMsg = e.toString();
+        if (errorMsg
+            .contains("type 'Null' is not a subtype of type 'String'")) {
+          _error = 'An unexpected error occurred. Please try again.';
+        } else {
+          _error = errorMsg;
+        }
       });
     }
   }
@@ -171,14 +183,6 @@ class _EditInventoryItemScreenState extends State<EditInventoryItemScreen> {
                 decoration: const InputDecoration(labelText: 'Category'),
               ),
               const SizedBox(height: 24),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitForm,
                 child: _isSubmitting

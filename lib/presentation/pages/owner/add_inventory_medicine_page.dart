@@ -118,18 +118,21 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
           token: _token!,
         ),
       );
+      final userId = _sessionManager.getUserId();
       final data = {
-        'medicine': _selectedMedicine!.id,
+        'medicineId': _selectedMedicine!.id,
         'medicineName': _selectedMedicine!.name,
         'pharmacy': _pharmacyId!,
         'price': double.parse(_priceController.text),
         'quantity': int.parse(_quantityController.text),
         'expiryDate': _selectedExpiryDate!.toIso8601String(),
         'category': _selectedMedicine!.category,
+        'updatedBy': userId,
       };
       await repo.addInventoryItem(_pharmacyId!, data);
       setState(() {
         _isSubmitting = false;
+        _error = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Medicine added to inventory!')),
@@ -143,7 +146,13 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        _error = e.toString();
+        final errorMsg = e.toString();
+        if (errorMsg
+            .contains("type 'Null' is not a subtype of type 'String'")) {
+          _error = 'An unexpected error occurred. Please try again.';
+        } else {
+          _error = errorMsg;
+        }
       });
     }
   }
@@ -155,7 +164,8 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
         create: (context) => ListMedicineBloc(
           MedicineRepositoryImpl(
             MedicineApi(
-              client: Dio(BaseOptions(baseUrl: 'http://localhost:5000/api/v1')),
+              client:
+                  Dio(BaseOptions(baseUrl: 'http://10.4.113.71:5000/api/v1')),
               baseUrl: '/medicines',
             ),
           ),
@@ -297,14 +307,6 @@ class _AddInventoryMedicinePageState extends State<AddInventoryMedicinePage> {
                                 ),
                               ),
                               const SizedBox(height: 30),
-                              if (_error != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: Text(
-                                    _error!,
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                ),
                               ElevatedButton(
                                 onPressed: _isSubmitting ? null : _submitForm,
                                 style: ElevatedButton.styleFrom(

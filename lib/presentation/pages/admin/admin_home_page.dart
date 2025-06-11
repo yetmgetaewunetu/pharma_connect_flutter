@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 import 'package:pharma_connect_flutter/application/blocs/admin/medicine/medicine_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pharma_connect_flutter/presentation/pages/admin/applications/applications_screen.dart';
+import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({Key? key}) : super(key: key);
@@ -57,15 +58,25 @@ class _AdminHomePageState extends State<AdminHomePage> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              // TODO: Implement logout functionality
-              Navigator.of(context).pushReplacementNamed('/login');
+              context.read<AuthBloc>().add(const AuthEvent.logout());
             },
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          state.maybeWhen(
+            unauthenticated: () {
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/login', (route) => false);
+            },
+            orElse: () {},
+          );
+        },
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: _pages,
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,

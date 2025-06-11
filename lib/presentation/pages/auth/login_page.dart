@@ -47,10 +47,7 @@ class LoginPage extends StatelessWidget {
         ),
       );
     } else if (user.role.toLowerCase() == 'owner') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const OwnerHomePage()),
-      );
+      Navigator.pushReplacementNamed(context, '/owner');
     } else {
       Navigator.pushReplacement(
         context,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/my_pharmacy_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/add_inventory_medicine_page.dart';
 import 'package:pharma_connect_flutter/presentation/pages/owner/my_inventory_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pharma_connect_flutter/application/blocs/auth/auth_bloc.dart';
 
 class OwnerHomePage extends StatefulWidget {
   const OwnerHomePage({Key? key}) : super(key: key);
@@ -59,26 +61,36 @@ class _OwnerHomePageState extends State<OwnerHomePage> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              // TODO: Implement logout functionality
-              // Navigate back to login or initial route
+              context.read<AuthBloc>().add(const AuthEvent.logout());
             },
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.grey[50]!,
-            ],
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          state.maybeWhen(
+            unauthenticated: () {
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/login', (route) => false);
+            },
+            orElse: () {},
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Colors.grey[50]!,
+              ],
+            ),
           ),
-        ),
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: _pages,
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: _pages,
+          ),
         ),
       ),
       bottomNavigationBar: Container(
