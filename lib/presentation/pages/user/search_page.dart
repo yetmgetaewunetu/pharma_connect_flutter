@@ -5,22 +5,30 @@ import 'package:pharma_connect_flutter/application/blocs/user/search_medicine_cu
 import 'package:pharma_connect_flutter/infrastructure/repositories/medicine_repository_impl.dart';
 import 'package:pharma_connect_flutter/infrastructure/datasources/remote/medicine_api.dart';
 import 'package:dio/dio.dart';
+import 'package:pharma_connect_flutter/application/blocs/cart/cart_bloc.dart';
+import 'package:pharma_connect_flutter/domain/entities/cart/cart_item.dart';
+import 'package:get_it/get_it.dart';
 
 class SearchPage extends StatelessWidget {
   const SearchPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => SearchMedicineCubit(
-        MedicineRepositoryImpl(
-          MedicineApi(
-            client: Dio(BaseOptions(baseUrl: 'http://10.0.2.2:5000/api/v1')),
-            baseUrl: '/medicines',
+    return BlocProvider<CartBloc>(
+      create: (_) =>
+          GetIt.I<CartBloc>(), // Or use CartBloc(GetIt.I<CartRepository>())
+      child: BlocProvider(
+        create: (_) => SearchMedicineCubit(
+          MedicineRepositoryImpl(
+            MedicineApi(
+              client:
+                  Dio(BaseOptions(baseUrl: 'http://10.4.113.71:5000/api/v1')),
+              baseUrl: '/medicines',
+            ),
           ),
         ),
+        child: const _SearchPageBody(),
       ),
-      child: const _SearchPageBody(),
     );
   }
 }
@@ -133,21 +141,21 @@ class _SearchPageBodyState extends State<_SearchPageBody> {
                   return ListView.builder(
                     itemCount: state.results.length,
                     itemBuilder: (context, index) {
-                      final medicine = state.results[index];
+                      final result = state.results[index];
                       return Card(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Row(
                             children: [
-                              // Medicine image if available
-                              if (medicine.image.isNotEmpty)
+                              // Pharmacy image if available
+                              if (result.photo.isNotEmpty)
                                 Container(
                                   width: 80,
                                   height: 80,
                                   margin: const EdgeInsets.only(right: 16),
                                   child: Image.network(
-                                    medicine.image,
+                                    result.photo,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => Container(
                                       color: Colors.grey[300],
@@ -165,20 +173,24 @@ class _SearchPageBodyState extends State<_SearchPageBody> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(medicine.name,
+                                    Text(result.pharmacyName,
                                         style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16)),
                                     const SizedBox(height: 4),
-                                    Text('Category: ${medicine.category}',
+                                    Text(result.address,
                                         style: const TextStyle(
                                             color: Colors.grey)),
                                     const SizedBox(height: 8),
-                                    Text('Br ${medicine.description}',
+                                    Text('Price: Br ${result.price}',
                                         style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,
                                             color: Colors.green)),
+                                    const SizedBox(height: 4),
+                                    Text('Quantity: ${result.quantity}',
+                                        style: const TextStyle(
+                                            color: Colors.black87)),
                                   ],
                                 ),
                               ),
@@ -186,20 +198,34 @@ class _SearchPageBodyState extends State<_SearchPageBody> {
                                 children: [
                                   TextButton(
                                     onPressed: () {
-                                      // TODO: Navigate to Pharmacy Detail Page
                                       Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const PharmacyDetailPage()));
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => PharmacyDetailPage(
+                                              pharmacyId: result.pharmacyId),
+                                        ),
+                                      );
                                     },
                                     child: const Text('See pharmacy detail'),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons
-                                        .add_shopping_cart), // Or similar icon
+                                    icon: const Icon(Icons.add_shopping_cart),
                                     onPressed: () {
-                                      // TODO: Implement add to cart logic
+                                      final cartItem = CartItem(
+                                        id: result.inventoryId,
+                                        name: result.pharmacyName,
+                                        price: result.price,
+                                        quantity: 1,
+                                        imageUrl: result.photo,
+                                      );
+                                      context
+                                          .read<CartBloc>()
+                                          .add(CartEvent.addItem(cartItem));
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text('Added to cart!')),
+                                      );
                                     },
                                   ),
                                 ],

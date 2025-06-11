@@ -9,7 +9,7 @@ class SearchMedicineInitial extends SearchMedicineState {}
 class SearchMedicineLoading extends SearchMedicineState {}
 
 class SearchMedicineLoaded extends SearchMedicineState {
-  final List<Medicine> results;
+  final List<MedicineSearchResult> results;
   SearchMedicineLoaded(this.results);
 }
 
@@ -24,10 +24,14 @@ class SearchMedicineCubit extends Cubit<SearchMedicineState> {
 
   Future<void> search(String query) async {
     emit(SearchMedicineLoading());
-    final result = await repository.searchMedicines(query);
-    result.fold(
-      (failure) => emit(SearchMedicineError(failure.message)),
-      (medicines) => emit(SearchMedicineLoaded(medicines)),
-    );
+    try {
+      final response = await repository.searchPharmacyInventory(query);
+      response.fold(
+        (failure) => emit(SearchMedicineError(failure.message)),
+        (results) => emit(SearchMedicineLoaded(results)),
+      );
+    } catch (e) {
+      emit(SearchMedicineError(e.toString()));
+    }
   }
 }

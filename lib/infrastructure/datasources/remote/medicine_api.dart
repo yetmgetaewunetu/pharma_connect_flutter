@@ -32,7 +32,7 @@ class MedicineApi {
   }
 
   Future<Response> searchMedicines(String query) async {
-    return await client.get('$baseUrl/search', queryParameters: {'q': query});
+    return await client.post('/search', data: {'medicineName': query});
   }
 
   Future<Response> getMedicinesByCategory(String category) async {

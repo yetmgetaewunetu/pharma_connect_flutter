@@ -9,5 +9,8 @@ abstract class MedicineRepository {
   Future<Either<Failure, Medicine>> updateMedicine(Medicine medicine);
   Future<Either<Failure, Unit>> deleteMedicine(String id);
   Future<Either<Failure, List<Medicine>>> searchMedicines(String query);
-  Future<Either<Failure, List<Medicine>>> getMedicinesByCategory(String category);
+  Future<Either<Failure, List<MedicineSearchResult>>> searchPharmacyInventory(
+      String query);
+  Future<Either<Failure, List<Medicine>>> getMedicinesByCategory(
+      String category);
 }

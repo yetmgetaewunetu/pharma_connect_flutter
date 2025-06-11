@@ -70,10 +70,26 @@ class MedicineRepositoryImpl implements MedicineRepository {
   Future<Either<Failure, List<Medicine>>> searchMedicines(String query) async {
     try {
       final response = await api.searchMedicines(query);
-      final List<dynamic> jsonList = response.data;
+      final List<dynamic> jsonList = response.data['data'] ?? [];
       final medicines =
           jsonList.map((json) => Medicine.fromJson(json)).toList();
       return Right(medicines);
+    } on DioException catch (e) {
+      return Left(ServerFailure(e.message ?? 'Failed to search medicines'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<MedicineSearchResult>>> searchPharmacyInventory(
+      String query) async {
+    try {
+      final response = await api.searchMedicines(query);
+      final List<dynamic> jsonList = response.data['data'] ?? [];
+      final results = jsonList
+          .map((json) =>
+              MedicineSearchResult.fromJson(json as Map<String, dynamic>))
+          .toList();
+      return Right(results);
     } on DioException catch (e) {
       return Left(ServerFailure(e.message ?? 'Failed to search medicines'));
     }

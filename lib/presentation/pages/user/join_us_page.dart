@@ -52,7 +52,7 @@ class _JoinUsPageState extends State<JoinUsPage> {
       _success = null;
     });
     try {
-      final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5000/api/v1'));
+      final dio = Dio(BaseOptions(baseUrl: 'http://10.4.113.71:5000/api/v1'));
       final payload = {
         "ownerName": _ownerNameController.text.trim(),
         "pharmacyName": _pharmacyNameController.text.trim(),
